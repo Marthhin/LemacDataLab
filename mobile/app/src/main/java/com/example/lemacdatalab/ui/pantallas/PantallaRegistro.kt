@@ -1,5 +1,6 @@
 package com.example.lemacdatalab.ui.pantallas
 
+import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,18 +8,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.ui.componentes.BotonPrincipal
 import com.example.lemacdatalab.ui.componentes.EncabezadoApp
+import java.util.Calendar
 
 @Composable
 fun PantallaRegistro(
@@ -28,6 +33,12 @@ fun PantallaRegistro(
     intensidad: String,
     nota: String,
     ambito: String,
+    errorFechaHora: String?,
+    errorTipoActividad: String?,
+    errorContexto: String?,
+    errorIntensidad: String?,
+    errorAmbito: String?,
+    mensajeResultado: String,
     alCambiarFechaHora: (String) -> Unit,
     alCambiarTipoActividad: (String) -> Unit,
     alCambiarContexto: (String) -> Unit,
@@ -36,6 +47,7 @@ fun PantallaRegistro(
     alCambiarAmbito: (String) -> Unit,
     alGuardar: () -> Unit
 ) {
+    val contextoAndroid = LocalContext.current
     val ambitos = listOf(
         "Neurodesarrollo",
         "DBT",
@@ -58,9 +70,7 @@ fun PantallaRegistro(
         Text("Elige un ámbito")
 
         ambitos.forEach { opcion ->
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 RadioButton(
                     selected = ambito == opcion,
                     onClick = { alCambiarAmbito(opcion) }
@@ -69,34 +79,83 @@ fun PantallaRegistro(
             }
         }
 
-        OutlinedTextField(
-            value = fechaHora,
-            onValueChange = alCambiarFechaHora,
-            label = { Text("Fecha y hora") },
-            modifier = Modifier.fillMaxWidth()
-        )
+        if (errorAmbito != null) {
+            Text(errorAmbito, color = MaterialTheme.colorScheme.error)
+        }
+
+        Text("Fecha: ${fechaHora.ifEmpty { "Sin seleccionar" }}")
+
+        Button(
+            onClick = {
+                val calendario = Calendar.getInstance()
+
+                // Si ya se elgio una fecha, el calendario volverá a abrir.
+                val partes = fechaHora.split("/")
+                if (partes.size == 3) {
+                    val dia = partes[0].toIntOrNull()
+                    val mes = partes[1].toIntOrNull()
+                    val anio = partes[2].toIntOrNull()
+                    if (dia != null && mes != null && anio != null && mes in 1..12) {
+                        calendario.set(anio, mes - 1, dia)
+                    }
+                }
+
+                DatePickerDialog(
+                    contextoAndroid,
+                    { _, anio, mes, dia ->
+                        val fechaElegida = "%02d/%02d/%04d"
+                            .format(dia, mes + 1, anio)
+                        alCambiarFechaHora(fechaElegida)
+                    },
+                    calendario.get(Calendar.YEAR),
+                    calendario.get(Calendar.MONTH),
+                    calendario.get(Calendar.DAY_OF_MONTH)
+                ).show()
+            }
+        ) {
+            Text("Elegir fecha")
+        }
+
+        if (errorFechaHora != null) {
+            Text(errorFechaHora, color = MaterialTheme.colorScheme.error)
+        }
 
         OutlinedTextField(
             value = tipoActividad,
             onValueChange = alCambiarTipoActividad,
             label = { Text("Actividad realizada") },
+            isError = errorTipoActividad != null,
             modifier = Modifier.fillMaxWidth()
         )
+
+        if (errorTipoActividad != null) {
+            Text(errorTipoActividad, color = MaterialTheme.colorScheme.error)
+        }
 
         OutlinedTextField(
             value = intensidad,
             onValueChange = alCambiarIntensidad,
             label = { Text("Intensidad") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            isError = errorIntensidad != null,
             modifier = Modifier.fillMaxWidth()
         )
+
+        if (errorIntensidad != null) {
+            Text(errorIntensidad, color = MaterialTheme.colorScheme.error)
+        }
 
         OutlinedTextField(
             value = contexto,
             onValueChange = alCambiarContexto,
             label = { Text("Contexto") },
+            isError = errorContexto != null,
             modifier = Modifier.fillMaxWidth()
         )
+
+        if (errorContexto != null) {
+            Text(errorContexto, color = MaterialTheme.colorScheme.error)
+        }
 
         OutlinedTextField(
             value = nota,
@@ -109,5 +168,9 @@ fun PantallaRegistro(
             texto = "Guardar registro",
             alPresionar = alGuardar
         )
+
+        if (mensajeResultado.isNotEmpty()) {
+            Text(mensajeResultado)
+        }
     }
 }
