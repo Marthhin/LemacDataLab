@@ -6,4 +6,5 @@ object Rutas {
     const val HISTORIAL = "historial"
     const val RECURSOS = "recursos"
     const val RECORDATORIOS = "recordatorios"
+    const val RESULTADO = "resultado"
 }
