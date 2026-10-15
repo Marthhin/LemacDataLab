@@ -8,10 +8,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.lemacdatalab.datos.BaseDatosRegistros
 import com.example.lemacdatalab.navigation.Rutas
+import com.example.lemacdatalab.ui.pantallas.PantallaHistorial
 import com.example.lemacdatalab.ui.pantallas.PantallaInicio
 import com.example.lemacdatalab.ui.pantallas.PantallaRegistro
 import com.example.lemacdatalab.ui.pantallas.PantallaResultado
 import com.example.lemacdatalab.ui.theme.LemacDataLabTheme
+import com.example.lemacdatalab.viewmodel.HistorialViewModel
 import com.example.lemacdatalab.viewmodel.InicioViewModel
 import com.example.lemacdatalab.viewmodel.RegistroViewModel
 
@@ -19,6 +21,7 @@ class MainActivity : ComponentActivity() {
 
     private val inicioViewModel = InicioViewModel()
     private val registroViewModel = RegistroViewModel()
+    private val historialViewModel = HistorialViewModel()
     private val baseDatos by lazy { BaseDatosRegistros(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,6 +40,10 @@ class MainActivity : ComponentActivity() {
                             viewModel = inicioViewModel,
                             alRegistrar = {
                                 navController.navigate(Rutas.REGISTRO)
+                            },
+                            alVerHistorial = {
+                                historialViewModel.cargarRegistros(baseDatos)
+                                navController.navigate(Rutas.HISTORIAL)
                             }
                         )
                     }
@@ -79,6 +86,17 @@ class MainActivity : ComponentActivity() {
                                     }
                                     launchSingleTop = true
                                 }
+                            }
+                        )
+                    }
+
+                    composable(Rutas.HISTORIAL) {
+                        PantallaHistorial(
+                            registros = historialViewModel.registros,
+                            cargando = historialViewModel.cargando,
+                            mensajeError = historialViewModel.mensajeError,
+                            alVolver = {
+                                navController.popBackStack()
                             }
                         )
                     }

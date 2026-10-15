@@ -15,7 +15,8 @@ import com.example.lemacdatalab.viewmodel.InicioViewModel
 @Composable
 fun PantallaInicio(
     viewModel: InicioViewModel,
-    alRegistrar: () -> Unit
+    alRegistrar: () -> Unit,
+    alVerHistorial: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -34,10 +35,10 @@ fun PantallaInicio(
             BotonPrincipal(
                 texto = opcion.nombre,
                 alPresionar = {
-                    if (opcion.nombre == "Registrar actividad") {
-                        alRegistrar()
-                    } else {
-                        viewModel.seleccionarOpcion(opcion)
+                    when (opcion.nombre) {
+                        "Registrar actividad" -> alRegistrar()
+                        "Ver historial" -> alVerHistorial()
+                        else -> viewModel.seleccionarOpcion(opcion)
                     }
                 }
             )
