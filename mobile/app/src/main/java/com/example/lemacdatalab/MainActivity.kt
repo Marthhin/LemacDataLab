@@ -39,6 +39,7 @@ class MainActivity : ComponentActivity() {
                         PantallaInicio(
                             viewModel = inicioViewModel,
                             alRegistrar = {
+                                registroViewModel.comenzarNuevoRegistro()
                                 navController.navigate(Rutas.REGISTRO)
                             },
                             alVerHistorial = {

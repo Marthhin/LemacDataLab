@@ -53,6 +53,24 @@ class RegistroViewModel : ViewModel() {
     var guardando by mutableStateOf(false)
         private set
 
+    fun comenzarNuevoRegistro() {
+        fechaHora = ""
+        tipoActividad = ""
+        contexto = ""
+        intensidad = ""
+        nota = ""
+        ambito = ""
+
+        errorFechaHora = null
+        errorTipoActividad = null
+        errorContexto = null
+        errorIntensidad = null
+        errorAmbito = null
+
+        mensajeResultado = ""
+        registroActual = null
+    }
+
     fun cambiarFechaHora(valor: String) {
         fechaHora = valor
         errorFechaHora = null
