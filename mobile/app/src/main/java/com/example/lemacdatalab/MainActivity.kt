@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.lemacdatalab.datos.BaseDatosRegistros
 import com.example.lemacdatalab.navigation.Rutas
 import com.example.lemacdatalab.ui.pantallas.PantallaInicio
 import com.example.lemacdatalab.ui.pantallas.PantallaRegistro
@@ -18,6 +19,7 @@ class MainActivity : ComponentActivity() {
 
     private val inicioViewModel = InicioViewModel()
     private val registroViewModel = RegistroViewModel()
+    private val baseDatos by lazy { BaseDatosRegistros(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,7 +62,7 @@ class MainActivity : ComponentActivity() {
                             alCambiarNota = registroViewModel::cambiarNota,
                             alCambiarAmbito = registroViewModel::cambiarAmbito,
                             alGuardar = {
-                                if (registroViewModel.validarFormulario()) {
+                                registroViewModel.guardarRegistro(baseDatos) {
                                     navController.navigate(Rutas.RESULTADO)
                                 }
                             }

@@ -1,9 +1,12 @@
 package com.example.lemacdatalab.viewmodel
 
+import android.os.Handler
+import android.os.Looper
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import com.example.lemacdatalab.datos.BaseDatosRegistros
 import com.example.lemacdatalab.model.RegistroActividad
 
 class RegistroViewModel : ViewModel() {
@@ -47,6 +50,9 @@ class RegistroViewModel : ViewModel() {
     var registroActual by mutableStateOf<RegistroActividad?>(null)
         private set
 
+    var guardando by mutableStateOf(false)
+        private set
+
     fun cambiarFechaHora(valor: String) {
         fechaHora = valor
         errorFechaHora = null
@@ -76,7 +82,7 @@ class RegistroViewModel : ViewModel() {
         errorAmbito = null
     }
 
-    fun validarFormulario(): Boolean {
+    private fun validarFormulario(): Boolean {
         errorFechaHora =
             if (fechaHora.isBlank()) "Selecciona una fecha" else null
 
@@ -104,19 +110,31 @@ class RegistroViewModel : ViewModel() {
 
         if (!esValido) {
             mensajeResultado = "Revisa los campos marcados"
-            return false
         }
+
+        return esValido
+    }
+
+    fun guardarRegistro(
+        baseDatos: BaseDatosRegistros,
+        alGuardarCorrectamente: () -> Unit
+    ) {
+        if (guardando || !validarFormulario()) return
 
         val idAmbitoSeleccionado = when (ambito) {
             "Neurodesarrollo" -> 1
             "DBT" -> 2
             "Estado de ánimo" -> 3
             "Adicciones" -> 4
-            else -> return false
+            else -> {
+                errorAmbito = "Selecciona un ámbito"
+                return
+            }
         }
 
-        registroActual = RegistroActividad(
-            idRegistro = 1,
+        // Estos valores siguen siendo datos ficticios de la prueba.
+        val registro = RegistroActividad(
+            idRegistro = 0,
             idUsuario = 1,
             idAmbito = idAmbitoSeleccionado,
             fechaHora = fechaHora,
@@ -127,7 +145,28 @@ class RegistroViewModel : ViewModel() {
             estado = "Prueba"
         )
 
-        mensajeResultado = "Registro de prueba creado"
-        return true
+        guardando = true
+        mensajeResultado = "Guardando registro..."
+        val hiloPrincipal = Handler(Looper.getMainLooper())
+
+        Thread {
+            val idGuardado = try {
+                baseDatos.guardar(registro)
+            } catch (_: Exception) {
+                -1L
+            }
+
+            hiloPrincipal.post {
+                guardando = false
+
+                if (idGuardado > 0) {
+                    registroActual = registro.copy(idRegistro = idGuardado.toInt())
+                    mensajeResultado = "Registro guardado en el dispositivo"
+                    alGuardarCorrectamente()
+                } else {
+                    mensajeResultado = "No se pudo guardar. Inténtalo de nuevo."
+                }
+            }
+        }.start()
     }
 }
