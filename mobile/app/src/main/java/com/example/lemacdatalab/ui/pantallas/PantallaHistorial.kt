@@ -7,9 +7,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.RegistroActividad
@@ -21,9 +28,55 @@ fun PantallaHistorial(
     registros: List<RegistroActividad>,
     cargando: Boolean,
     mensajeError: String,
+    eliminando: Boolean,
+    mensajeOperacion: String,
     alEditar: (RegistroActividad) -> Unit,
+    alEliminar: (RegistroActividad) -> Unit,
     alVolver: () -> Unit
 ) {
+    var registroPorEliminar by remember {
+        mutableStateOf<RegistroActividad?>(null)
+    }
+
+    val seleccionado = registroPorEliminar
+
+    if (seleccionado != null) {
+        AlertDialog(
+            onDismissRequest = {
+                registroPorEliminar = null
+            },
+            title = {
+                Text("Eliminar registro")
+            },
+            text = {
+                Text(
+                    "¿Quieres eliminar esta actividad? " +
+                            "Esta acción no se puede deshacer."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !eliminando,
+                    onClick = {
+                        registroPorEliminar = null
+                        alEliminar(seleccionado)
+                    }
+                ) {
+                    Text("Eliminar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        registroPorEliminar = null
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -37,8 +90,15 @@ fun PantallaHistorial(
 
         when {
             cargando -> Text("Cargando registros...")
-            mensajeError.isNotEmpty() -> Text(mensajeError)
+            mensajeError.isNotEmpty() -> Text(
+                text = mensajeError,
+                color = MaterialTheme.colorScheme.error
+            )
             registros.isEmpty() -> Text("Todavía no hay registros.")
+        }
+
+        if (mensajeOperacion.isNotEmpty()) {
+            Text(mensajeOperacion)
         }
 
         LazyColumn(
@@ -70,8 +130,24 @@ fun PantallaHistorial(
 
                     BotonPrincipal(
                         texto = "Editar",
-                        alPresionar = { alEditar(registro) }
+                        alPresionar = {
+                            if (!eliminando) {
+                                alEditar(registro)
+                            }
+                        }
                     )
+
+                    TextButton(
+                        enabled = !eliminando,
+                        onClick = {
+                            registroPorEliminar = registro
+                        }
+                    ) {
+                        Text(
+                            text = "Eliminar",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
 
                     HorizontalDivider()
                 }

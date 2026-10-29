@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.model.RegistroActividad
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -23,6 +24,12 @@ class HistorialViewModel(
         private set
 
     var mensajeError by mutableStateOf("")
+        private set
+
+    var eliminando by mutableStateOf(false)
+        private set
+
+    var mensajeOperacion by mutableStateOf("")
         private set
 
     init {
@@ -46,6 +53,36 @@ class HistorialViewModel(
                     cargando = false
                     mensajeError = ""
                 }
+        }
+    }
+
+    fun eliminarRegistro(registro: RegistroActividad) {
+        if (eliminando) return
+
+        eliminando = true
+        mensajeOperacion = "Eliminando registro..."
+
+        viewModelScope.launch {
+            try {
+                val filasEliminadas = repositorio.eliminar(registro)
+
+                mensajeOperacion = if (filasEliminadas == 1) {
+                    "Registro eliminado correctamente."
+                } else {
+                    "El registro ya no se encuentra en la base de datos."
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                Log.e(
+                    "HistorialViewModel",
+                    "Error al eliminar el registro",
+                    error
+                )
+                mensajeOperacion = "No se pudo eliminar. Inténtalo de nuevo."
+            } finally {
+                eliminando = false
+            }
         }
     }
 }

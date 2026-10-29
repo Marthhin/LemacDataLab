@@ -138,9 +138,14 @@ class MainActivity : ComponentActivity() {
                             registros = historialViewModel.registros,
                             cargando = historialViewModel.cargando,
                             mensajeError = historialViewModel.mensajeError,
+                            eliminando = historialViewModel.eliminando,
+                            mensajeOperacion = historialViewModel.mensajeOperacion,
                             alEditar = { registro ->
                                 registroViewModel.comenzarEditarRegistro(registro)
                                 navController.navigate(Rutas.REGISTRO)
+                            },
+                            alEliminar = { registro ->
+                                historialViewModel.eliminarRegistro(registro)
                             },
                             alVolver = {
                                 navController.popBackStack()
