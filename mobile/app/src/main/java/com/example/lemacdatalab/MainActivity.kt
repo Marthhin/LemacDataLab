@@ -10,6 +10,7 @@ import com.example.lemacdatalab.datos.BaseDatosRegistros
 import com.example.lemacdatalab.navigation.Rutas
 import com.example.lemacdatalab.ui.pantallas.PantallaHistorial
 import com.example.lemacdatalab.ui.pantallas.PantallaInicio
+import com.example.lemacdatalab.ui.pantallas.PantallaRecordatorios
 import com.example.lemacdatalab.ui.pantallas.PantallaRegistro
 import com.example.lemacdatalab.ui.pantallas.PantallaResultado
 import com.example.lemacdatalab.ui.theme.LemacDataLabTheme
@@ -45,6 +46,9 @@ class MainActivity : ComponentActivity() {
                             alVerHistorial = {
                                 historialViewModel.cargarRegistros(baseDatos)
                                 navController.navigate(Rutas.HISTORIAL)
+                            },
+                            alVerRecordatorios = {
+                                navController.navigate(Rutas.RECORDATORIOS)
                             }
                         )
                     }
@@ -96,6 +100,14 @@ class MainActivity : ComponentActivity() {
                             registros = historialViewModel.registros,
                             cargando = historialViewModel.cargando,
                             mensajeError = historialViewModel.mensajeError,
+                            alVolver = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
+                    composable(Rutas.RECORDATORIOS) {
+                        PantallaRecordatorios(
                             alVolver = {
                                 navController.popBackStack()
                             }

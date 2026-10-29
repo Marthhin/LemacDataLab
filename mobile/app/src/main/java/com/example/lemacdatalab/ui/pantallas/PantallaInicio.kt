@@ -16,7 +16,8 @@ import com.example.lemacdatalab.viewmodel.InicioViewModel
 fun PantallaInicio(
     viewModel: InicioViewModel,
     alRegistrar: () -> Unit,
-    alVerHistorial: () -> Unit
+    alVerHistorial: () -> Unit,
+    alVerRecordatorios: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -38,6 +39,7 @@ fun PantallaInicio(
                     when (opcion.nombre) {
                         "Registrar actividad" -> alRegistrar()
                         "Ver historial" -> alVerHistorial()
+                        "Recordatorios" -> alVerRecordatorios()
                         else -> viewModel.seleccionarOpcion(opcion)
                     }
                 }
