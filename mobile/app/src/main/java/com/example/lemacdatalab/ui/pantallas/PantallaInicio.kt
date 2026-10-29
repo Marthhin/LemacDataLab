@@ -1,15 +1,24 @@
 package com.example.lemacdatalab.ui.pantallas
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.lemacdatalab.ui.componentes.BotonPrincipal
-import com.example.lemacdatalab.ui.componentes.EncabezadoApp
+import com.example.lemacdatalab.ui.componentes.TarjetaOpcion
+import com.example.lemacdatalab.ui.componentes.TarjetaPrincipal
 import com.example.lemacdatalab.viewmodel.InicioViewModel
 
 @Composable
@@ -22,28 +31,63 @@ fun PantallaInicio(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(MaterialTheme.colorScheme.background)
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        EncabezadoApp(
-            titulo = "LemacDataLab",
-            descripcion = "Registra y consulta tus actividades de autocuidado."
+        Text(
+            text = "LemacDataLab",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary
         )
 
-        Text(text = viewModel.mensajeSeleccionado)
+        Text(
+            text = "Hola 👋",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
 
-        viewModel.opciones.forEach { opcion ->
-            BotonPrincipal(
-                texto = opcion.nombre,
+        Text(
+            text = "Cuida de ti hoy",
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        TarjetaPrincipal(
+            opcion = viewModel.principal,
+            alPresionar = alRegistrar
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Más opciones",
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        viewModel.secundarias.forEach { opcion ->
+            TarjetaOpcion(
+                opcion = opcion,
                 alPresionar = {
                     when (opcion.nombre) {
-                        "Registrar actividad" -> alRegistrar()
                         "Ver historial" -> alVerHistorial()
                         "Recordatorios" -> alVerRecordatorios()
-                        else -> viewModel.seleccionarOpcion(opcion)
                     }
                 }
             )
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Text(
+            text = "Proyecto académico · Usa datos ficticios",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }

@@ -1,14 +1,42 @@
 package com.example.lemacdatalab.ui.pantallas
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Mood
+import androidx.compose.material.icons.rounded.Psychology
+import androidx.compose.material.icons.rounded.SelfImprovement
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -17,11 +45,41 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.RegistroActividad
-import com.example.lemacdatalab.ui.componentes.BotonPrincipal
-import com.example.lemacdatalab.ui.componentes.EncabezadoApp
+
+private data class InfoAmbitoHistorial(
+    val nombre: String,
+    val icono: ImageVector
+)
+
+private fun obtenerInfoAmbito(id: Int): InfoAmbitoHistorial {
+    return when (id) {
+        1 -> InfoAmbitoHistorial(
+            "Neurodesarrollo",
+            Icons.Rounded.Psychology
+        )
+        2 -> InfoAmbitoHistorial(
+            "DBT",
+            Icons.Rounded.SelfImprovement
+        )
+        3 -> InfoAmbitoHistorial(
+            "Estado de ánimo",
+            Icons.Rounded.Mood
+        )
+        4 -> InfoAmbitoHistorial(
+            "Adicciones",
+            Icons.Rounded.Favorite
+        )
+        else -> InfoAmbitoHistorial(
+            "Sin identificar",
+            Icons.Rounded.Info
+        )
+    }
+}
 
 @Composable
 fun PantallaHistorial(
@@ -45,12 +103,18 @@ fun PantallaHistorial(
             onDismissRequest = {
                 registroPorEliminar = null
             },
+            icon = {
+                Icon(
+                    imageVector = Icons.Rounded.Delete,
+                    contentDescription = null
+                )
+            },
             title = {
                 Text("Eliminar registro")
             },
             text = {
                 Text(
-                    "¿Quieres eliminar esta actividad? " +
+                    "¿Quieres eliminar “${seleccionado.tipoActividad}”? " +
                             "Esta acción no se puede deshacer."
                 )
             },
@@ -62,7 +126,10 @@ fun PantallaHistorial(
                         alEliminar(seleccionado)
                     }
                 ) {
-                    Text("Eliminar")
+                    Text(
+                        text = "Eliminar",
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             },
             dismissButton = {
@@ -80,83 +147,287 @@ fun PantallaHistorial(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(MaterialTheme.colorScheme.background)
+            .windowInsetsPadding(WindowInsets.safeDrawing)
     ) {
-        EncabezadoApp(
-            titulo = "Historial",
-            descripcion = "Actividades de prueba guardadas en este dispositivo."
-        )
-
-        when {
-            cargando -> Text("Cargando registros...")
-            mensajeError.isNotEmpty() -> Text(
-                text = mensajeError,
-                color = MaterialTheme.colorScheme.error
-            )
-            registros.isEmpty() -> Text("Todavía no hay registros.")
-        }
-
-        if (mensajeOperacion.isNotEmpty()) {
-            Text(mensajeOperacion)
-        }
-
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            items(registros, key = { it.idRegistro }) { registro ->
-                val nombreAmbito = when (registro.idAmbito) {
-                    1 -> "Neurodesarrollo"
-                    2 -> "DBT"
-                    3 -> "Estado de ánimo"
-                    4 -> "Adicciones"
-                    else -> "Sin identificar"
-                }
+            IconButton(onClick = alVolver) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                    contentDescription = "Volver al inicio"
+                )
+            }
 
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(registro.tipoActividad)
-                    Text("Ámbito: $nombreAmbito")
-                    Text("Fecha: ${registro.fechaHora}")
-                    Text("Intensidad: ${registro.intensidad}")
-                    Text("Contexto: ${registro.contexto}")
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "Historial",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.onBackground
+                )
 
-                    if (!registro.nota.isNullOrBlank()) {
-                        Text("Nota: ${registro.nota}")
-                    }
-
-                    BotonPrincipal(
-                        texto = "Editar",
-                        alPresionar = {
-                            if (!eliminando) {
-                                alEditar(registro)
-                            }
-                        }
+                if (!cargando && mensajeError.isEmpty()) {
+                    Text(
+                        text = "${registros.size} " +
+                                if (registros.size == 1) "registro" else "registros",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-
-                    TextButton(
-                        enabled = !eliminando,
-                        onClick = {
-                            registroPorEliminar = registro
-                        }
-                    ) {
-                        Text(
-                            text = "Eliminar",
-                            color = MaterialTheme.colorScheme.error
-                        )
-                    }
-
-                    HorizontalDivider()
                 }
             }
         }
 
-        BotonPrincipal(
-            texto = "Volver al inicio",
-            alPresionar = alVolver
-        )
+        if (mensajeOperacion.isNotEmpty()) {
+            Text(
+                text = mensajeOperacion,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(
+                    horizontal = 20.dp,
+                    vertical = 8.dp
+                )
+            )
+        }
+
+        if (eliminando) {
+            LinearProgressIndicator(
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        when {
+            cargando -> EstadoHistorial(
+                modifier = Modifier.weight(1f)
+            ) {
+                CircularProgressIndicator()
+                Text("Cargando registros...")
+            }
+
+            mensajeError.isNotEmpty() -> EstadoHistorial(
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.ErrorOutline,
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.error
+                )
+
+                Text(
+                    text = mensajeError,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            registros.isEmpty() -> EstadoHistorial(
+                modifier = Modifier.weight(1f)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.History,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+
+                Text(
+                    text = "Aún no tienes registros",
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                Text(
+                    text = "Las actividades que guardes aparecerán aquí.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            else -> LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentPadding = PaddingValues(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(
+                    items = registros,
+                    key = { it.idRegistro }
+                ) { registro ->
+                    TarjetaRegistroHistorial(
+                        registro = registro,
+                        habilitada = !eliminando,
+                        alEditar = {
+                            alEditar(registro)
+                        },
+                        alEliminar = {
+                            registroPorEliminar = registro
+                        }
+                    )
+                }
+            }
+        }
     }
+}
+
+@Composable
+private fun TarjetaRegistroHistorial(
+    registro: RegistroActividad,
+    habilitada: Boolean,
+    alEditar: () -> Unit,
+    alEliminar: () -> Unit
+) {
+    val ambito = obtenerInfoAmbito(registro.idAmbito)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(12.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = ambito.icono,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = registro.tipoActividad,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    Text(
+                        text = ambito.nombre,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    Text(
+                        text = registro.fechaHora,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Text(
+                text = "Intensidad: ${registro.intensidad}",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Text(
+                text = "Contexto",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Text(
+                text = registro.contexto,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
+            if (!registro.nota.isNullOrBlank()) {
+                Text(
+                    text = "Nota",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Text(
+                    text = registro.nota,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(
+                    enabled = habilitada,
+                    onClick = alEditar
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Edit,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Editar")
+                }
+
+                TextButton(
+                    enabled = habilitada,
+                    onClick = alEliminar
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Delete,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(6.dp))
+
+                    Text(
+                        text = "Eliminar",
+                        color = if (habilitada) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun EstadoHistorial(
+    modifier: Modifier = Modifier,
+    contenido: @Composable ColumnScope.() -> Unit
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(32.dp),
+        verticalArrangement = Arrangement.spacedBy(
+            12.dp,
+            Alignment.CenterVertically
+        ),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        content = contenido
+    )
 }

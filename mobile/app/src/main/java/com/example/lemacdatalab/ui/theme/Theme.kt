@@ -1,57 +1,75 @@
 package com.example.lemacdatalab.ui.theme
 
-import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+private val EsquemaClaro = lightColorScheme(
+    primary = AzulPrimario,
+    onPrimary = Color.White,
+    primaryContainer = AzulContenedor,
+    onPrimaryContainer = AzulSobreContenedor,
+    secondary = GrisAzulSecundario,
+    onSecondary = Color.White,
+    secondaryContainer = GrisAzulContenedor,
+    onSecondaryContainer = GrisAzulSobreContenedor,
+    tertiary = DuraznoTerciario,
+    onTertiary = Color.White,
+    tertiaryContainer = DuraznoContenedor,
+    onTertiaryContainer = DuraznoSobreContenedor,
+    background = FondoClaro,
+    onBackground = TextoClaro,
+    surface = FondoClaro,
+    onSurface = TextoClaro,
+    surfaceVariant = VarianteClaro,
+    onSurfaceVariant = TextoVarianteClaro,
+    outline = BordeClaro,
+    outlineVariant = BordeSuaveClaro,
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFF1F3F8),
+    surfaceContainer = Color(0xFFEBEEF3),
+    surfaceContainerHigh = Color(0xFFE6E8ED),
+    surfaceContainerHighest = Color(0xFFE0E2E8)
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+private val EsquemaOscuro = darkColorScheme(
+    primary = AzulPrimarioOscuro,
+    onPrimary = AzulSobrePrimarioOscuro,
+    primaryContainer = AzulContenedorOscuro,
+    onPrimaryContainer = AzulContenedor,
+    secondary = GrisAzulSecundarioOscuro,
+    onSecondary = GrisAzulSobreSecundarioOscuro,
+    secondaryContainer = GrisAzulContenedorOscuro,
+    onSecondaryContainer = GrisAzulContenedor,
+    tertiary = DuraznoTerciarioOscuro,
+    onTertiary = DuraznoSobreTerciarioOscuro,
+    tertiaryContainer = DuraznoContenedorOscuro,
+    onTertiaryContainer = DuraznoContenedor,
+    background = FondoOscuro,
+    onBackground = TextoOscuro,
+    surface = FondoOscuro,
+    onSurface = TextoOscuro,
+    surfaceVariant = TextoVarianteClaro,
+    onSurfaceVariant = BordeSuaveClaro,
+    outline = BordeOscuro,
+    outlineVariant = TextoVarianteClaro,
+    surfaceContainerLowest = Color(0xFF0C0E12),
+    surfaceContainerLow = Color(0xFF191C20),
+    surfaceContainer = Color(0xFF1D2024),
+    surfaceContainerHigh = Color(0xFF282A2F),
+    surfaceContainerHighest = Color(0xFF33353A)
 )
 
 @Composable
 fun LemacDataLabTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = if (darkTheme) EsquemaOscuro else EsquemaClaro,
         typography = Typography,
         content = content
     )
