@@ -21,6 +21,7 @@ fun PantallaHistorial(
     registros: List<RegistroActividad>,
     cargando: Boolean,
     mensajeError: String,
+    alEditar: (RegistroActividad) -> Unit,
     alVolver: () -> Unit
 ) {
     Column(
@@ -55,7 +56,7 @@ fun PantallaHistorial(
 
                 Column(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(registro.tipoActividad)
                     Text("Ámbito: $nombreAmbito")
@@ -66,6 +67,11 @@ fun PantallaHistorial(
                     if (!registro.nota.isNullOrBlank()) {
                         Text("Nota: ${registro.nota}")
                     }
+
+                    BotonPrincipal(
+                        texto = "Editar",
+                        alPresionar = { alEditar(registro) }
+                    )
 
                     HorizontalDivider()
                 }

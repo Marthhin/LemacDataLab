@@ -57,8 +57,16 @@ class RegistroViewModel(
     var guardando by mutableStateOf(false)
         private set
 
+    private var registroEnEdicion by mutableStateOf<RegistroActividad?>(null)
+
+    val editando: Boolean
+        get() = registroEnEdicion != null
+
     fun comenzarNuevoRegistro() {
         if (guardando) return
+
+        registroEnEdicion = null
+        registroActual = null
 
         fechaHora = ""
         tipoActividad = ""
@@ -67,14 +75,39 @@ class RegistroViewModel(
         nota = ""
         ambito = ""
 
+        limpiarErrores()
+    }
+
+    fun comenzarEditarRegistro(registro: RegistroActividad) {
+        if (guardando) return
+
+        registroEnEdicion = registro
+        registroActual = null
+
+        fechaHora = registro.fechaHora
+        tipoActividad = registro.tipoActividad
+        contexto = registro.contexto
+        intensidad = registro.intensidad.toString()
+        nota = registro.nota.orEmpty()
+
+        ambito = when (registro.idAmbito) {
+            1 -> "Neurodesarrollo"
+            2 -> "DBT"
+            3 -> "Estado de ánimo"
+            4 -> "Adicciones"
+            else -> ""
+        }
+
+        limpiarErrores()
+    }
+
+    private fun limpiarErrores() {
         errorFechaHora = null
         errorTipoActividad = null
         errorContexto = null
         errorIntensidad = null
         errorAmbito = null
-
         mensajeResultado = ""
-        registroActual = null
     }
 
     fun cambiarFechaHora(valor: String) {
@@ -153,37 +186,59 @@ class RegistroViewModel(
             }
         }
 
+        val original = registroEnEdicion
+
         val registro = RegistroActividad(
-            idRegistro = 0,
-            idUsuario = 1,
+            idRegistro = original?.idRegistro ?: 0,
+            idUsuario = original?.idUsuario ?: 1,
             idAmbito = idAmbitoSeleccionado,
             fechaHora = fechaHora,
             tipoActividad = tipoActividad.trim(),
             intensidad = intensidad.toInt(),
             contexto = contexto.trim(),
             nota = nota.trim().ifEmpty { null },
-            estado = "Prueba"
+            estado = original?.estado ?: "Prueba"
         )
 
         guardando = true
-        mensajeResultado = "Guardando registro..."
+        mensajeResultado = if (original == null) {
+            "Guardando registro..."
+        } else {
+            "Actualizando registro..."
+        }
 
         viewModelScope.launch {
             try {
-                val idGuardado = repositorio.insertar(registro)
-                check(idGuardado > 0) {
-                    "La base de datos no devolvió un identificador válido"
-                }
+                if (original == null) {
+                    val idGuardado = repositorio.insertar(registro)
 
-                registroActual = registro.copy(
-                    idRegistro = idGuardado.toInt()
-                )
-                mensajeResultado = "Registro guardado en el dispositivo"
+                    check(idGuardado > 0) {
+                        "La base de datos no devolvió un identificador válido"
+                    }
+
+                    registroActual = registro.copy(
+                        idRegistro = idGuardado.toInt()
+                    )
+                    mensajeResultado = "Registro guardado en el dispositivo"
+                } else {
+                    val filasActualizadas = repositorio.actualizar(registro)
+
+                    check(filasActualizadas == 1) {
+                        "No se encontró el registro que se quería actualizar"
+                    }
+
+                    registroActual = registro
+                    mensajeResultado = "Registro actualizado correctamente"
+                }
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
-                Log.e("RegistroViewModel", "Error al guardar el registro", error)
-                mensajeResultado = "No se pudo guardar. Inténtalo de nuevo."
+                Log.e(
+                    "RegistroViewModel",
+                    "Error al guardar o actualizar el registro",
+                    error
+                )
+                mensajeResultado = "No se pudieron guardar los cambios. Inténtalo de nuevo."
                 return@launch
             } finally {
                 guardando = false

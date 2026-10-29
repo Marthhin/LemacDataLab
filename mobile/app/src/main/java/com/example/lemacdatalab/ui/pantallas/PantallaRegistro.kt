@@ -33,6 +33,7 @@ fun PantallaRegistro(
     intensidad: String,
     nota: String,
     ambito: String,
+    editando: Boolean,
     errorFechaHora: String?,
     errorTipoActividad: String?,
     errorContexto: String?,
@@ -48,6 +49,7 @@ fun PantallaRegistro(
     alGuardar: () -> Unit
 ) {
     val contextoAndroid = LocalContext.current
+
     val ambitos = listOf(
         "Neurodesarrollo",
         "DBT",
@@ -63,14 +65,24 @@ fun PantallaRegistro(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         EncabezadoApp(
-            titulo = "Nuevo registro",
-            descripcion = "Ingresa una actividad de prueba."
+            titulo = if (editando) {
+                "Editar registro"
+            } else {
+                "Nuevo registro"
+            },
+            descripcion = if (editando) {
+                "Modifica los datos de la actividad."
+            } else {
+                "Ingresa una actividad de prueba."
+            }
         )
 
         Text("Elige un ámbito")
 
         ambitos.forEach { opcion ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 RadioButton(
                     selected = ambito == opcion,
                     onClick = { alCambiarAmbito(opcion) }
@@ -80,7 +92,10 @@ fun PantallaRegistro(
         }
 
         if (errorAmbito != null) {
-            Text(errorAmbito, color = MaterialTheme.colorScheme.error)
+            Text(
+                text = errorAmbito,
+                color = MaterialTheme.colorScheme.error
+            )
         }
 
         Text("Fecha: ${fechaHora.ifEmpty { "Sin seleccionar" }}")
@@ -89,13 +104,19 @@ fun PantallaRegistro(
             onClick = {
                 val calendario = Calendar.getInstance()
 
-                // Si ya se elgio una fecha, el calendario volverá a abrir.
                 val partes = fechaHora.split("/")
+
                 if (partes.size == 3) {
                     val dia = partes[0].toIntOrNull()
                     val mes = partes[1].toIntOrNull()
                     val anio = partes[2].toIntOrNull()
-                    if (dia != null && mes != null && anio != null && mes in 1..12) {
+
+                    if (
+                        dia != null &&
+                        mes != null &&
+                        anio != null &&
+                        mes in 1..12
+                    ) {
                         calendario.set(anio, mes - 1, dia)
                     }
                 }
@@ -105,6 +126,7 @@ fun PantallaRegistro(
                     { _, anio, mes, dia ->
                         val fechaElegida = "%02d/%02d/%04d"
                             .format(dia, mes + 1, anio)
+
                         alCambiarFechaHora(fechaElegida)
                     },
                     calendario.get(Calendar.YEAR),
@@ -117,7 +139,10 @@ fun PantallaRegistro(
         }
 
         if (errorFechaHora != null) {
-            Text(errorFechaHora, color = MaterialTheme.colorScheme.error)
+            Text(
+                text = errorFechaHora,
+                color = MaterialTheme.colorScheme.error
+            )
         }
 
         OutlinedTextField(
@@ -129,20 +154,28 @@ fun PantallaRegistro(
         )
 
         if (errorTipoActividad != null) {
-            Text(errorTipoActividad, color = MaterialTheme.colorScheme.error)
+            Text(
+                text = errorTipoActividad,
+                color = MaterialTheme.colorScheme.error
+            )
         }
 
         OutlinedTextField(
             value = intensidad,
             onValueChange = alCambiarIntensidad,
             label = { Text("Intensidad") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number
+            ),
             isError = errorIntensidad != null,
             modifier = Modifier.fillMaxWidth()
         )
 
         if (errorIntensidad != null) {
-            Text(errorIntensidad, color = MaterialTheme.colorScheme.error)
+            Text(
+                text = errorIntensidad,
+                color = MaterialTheme.colorScheme.error
+            )
         }
 
         OutlinedTextField(
@@ -154,7 +187,10 @@ fun PantallaRegistro(
         )
 
         if (errorContexto != null) {
-            Text(errorContexto, color = MaterialTheme.colorScheme.error)
+            Text(
+                text = errorContexto,
+                color = MaterialTheme.colorScheme.error
+            )
         }
 
         OutlinedTextField(
@@ -165,7 +201,11 @@ fun PantallaRegistro(
         )
 
         BotonPrincipal(
-            texto = "Guardar registro",
+            texto = if (editando) {
+                "Guardar cambios"
+            } else {
+                "Guardar registro"
+            },
             alPresionar = alGuardar
         )
 

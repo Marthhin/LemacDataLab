@@ -94,6 +94,7 @@ class MainActivity : ComponentActivity() {
                             intensidad = registroViewModel.intensidad,
                             nota = registroViewModel.nota,
                             ambito = registroViewModel.ambito,
+                            editando = registroViewModel.editando,
                             errorFechaHora = registroViewModel.errorFechaHora,
                             errorTipoActividad = registroViewModel.errorTipoActividad,
                             errorContexto = registroViewModel.errorContexto,
@@ -137,6 +138,10 @@ class MainActivity : ComponentActivity() {
                             registros = historialViewModel.registros,
                             cargando = historialViewModel.cargando,
                             mensajeError = historialViewModel.mensajeError,
+                            alEditar = { registro ->
+                                registroViewModel.comenzarEditarRegistro(registro)
+                                navController.navigate(Rutas.REGISTRO)
+                            },
                             alVolver = {
                                 navController.popBackStack()
                             }
