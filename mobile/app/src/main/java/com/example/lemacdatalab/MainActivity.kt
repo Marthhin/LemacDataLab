@@ -33,6 +33,9 @@ class MainActivity : ComponentActivity() {
     private val fabricaViewModels by lazy {
         viewModelFactory {
             initializer {
+                InicioViewModel(repositorio)
+            }
+            initializer {
                 RegistroViewModel(repositorio)
             }
             initializer {
@@ -42,7 +45,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private val inicioViewModel by lazy {
-        ViewModelProvider(this)[InicioViewModel::class.java]
+        ViewModelProvider(
+            this,
+            fabricaViewModels
+        )[InicioViewModel::class.java]
     }
 
     private val registroViewModel by lazy {

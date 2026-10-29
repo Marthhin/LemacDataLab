@@ -44,7 +44,7 @@ fun PantallaInicio(
         )
 
         Text(
-            text = "Hola 👋",
+            text = viewModel.saludo,
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -53,6 +53,21 @@ fun PantallaInicio(
             text = "Cuida de ti hoy",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground
+        )
+
+        Text(
+            text = when {
+                viewModel.cargando -> "Cargando tu resumen..."
+                viewModel.mensajeError.isNotEmpty() -> viewModel.mensajeError
+                viewModel.totalRegistros == 1 -> "Tienes 1 registro guardado"
+                else -> "Tienes ${viewModel.totalRegistros} registros guardados"
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (viewModel.mensajeError.isNotEmpty()) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            }
         )
 
         Spacer(modifier = Modifier.height(8.dp))
