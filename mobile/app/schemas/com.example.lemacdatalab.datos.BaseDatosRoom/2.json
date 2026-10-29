@@ -1,0 +1,78 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "f6802bb9326a24dea702e6ab5f880c2d",
+    "entities": [
+      {
+        "tableName": "registros",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id_registro` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id_usuario` INTEGER NOT NULL, `id_ambito` INTEGER NOT NULL, `fecha_hora` TEXT NOT NULL, `tipo_actividad` TEXT NOT NULL, `intensidad` INTEGER NOT NULL, `contexto` TEXT NOT NULL, `nota` TEXT, `estado` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "idRegistro",
+            "columnName": "id_registro",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idUsuario",
+            "columnName": "id_usuario",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "idAmbito",
+            "columnName": "id_ambito",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaHora",
+            "columnName": "fecha_hora",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipoActividad",
+            "columnName": "tipo_actividad",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "intensidad",
+            "columnName": "intensidad",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "contexto",
+            "columnName": "contexto",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nota",
+            "columnName": "nota",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id_registro"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'f6802bb9326a24dea702e6ab5f880c2d')"
+    ]
+  }
+}
