@@ -1,15 +1,19 @@
 package com.example.lemacdatalab.viewmodel
 
-import android.os.Handler
-import android.os.Looper
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import com.example.lemacdatalab.datos.BaseDatosRegistros
+import androidx.lifecycle.viewModelScope
+import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.model.RegistroActividad
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.launch
 
-class RegistroViewModel : ViewModel() {
+class RegistroViewModel(
+    private val repositorio: RepositorioRegistros
+) : ViewModel() {
 
     var fechaHora by mutableStateOf("")
         private set
@@ -54,6 +58,8 @@ class RegistroViewModel : ViewModel() {
         private set
 
     fun comenzarNuevoRegistro() {
+        if (guardando) return
+
         fechaHora = ""
         tipoActividad = ""
         contexto = ""
@@ -133,10 +139,7 @@ class RegistroViewModel : ViewModel() {
         return esValido
     }
 
-    fun guardarRegistro(
-        baseDatos: BaseDatosRegistros,
-        alGuardarCorrectamente: () -> Unit
-    ) {
+    fun guardarRegistro(alGuardarCorrectamente: () -> Unit) {
         if (guardando || !validarFormulario()) return
 
         val idAmbitoSeleccionado = when (ambito) {
@@ -150,7 +153,6 @@ class RegistroViewModel : ViewModel() {
             }
         }
 
-        // Estos valores siguen siendo datos ficticios de la prueba.
         val registro = RegistroActividad(
             idRegistro = 0,
             idUsuario = 1,
@@ -165,26 +167,29 @@ class RegistroViewModel : ViewModel() {
 
         guardando = true
         mensajeResultado = "Guardando registro..."
-        val hiloPrincipal = Handler(Looper.getMainLooper())
 
-        Thread {
-            val idGuardado = try {
-                baseDatos.guardar(registro)
-            } catch (_: Exception) {
-                -1L
-            }
-
-            hiloPrincipal.post {
-                guardando = false
-
-                if (idGuardado > 0) {
-                    registroActual = registro.copy(idRegistro = idGuardado.toInt())
-                    mensajeResultado = "Registro guardado en el dispositivo"
-                    alGuardarCorrectamente()
-                } else {
-                    mensajeResultado = "No se pudo guardar. Inténtalo de nuevo."
+        viewModelScope.launch {
+            try {
+                val idGuardado = repositorio.insertar(registro)
+                check(idGuardado > 0) {
+                    "La base de datos no devolvió un identificador válido"
                 }
+
+                registroActual = registro.copy(
+                    idRegistro = idGuardado.toInt()
+                )
+                mensajeResultado = "Registro guardado en el dispositivo"
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                Log.e("RegistroViewModel", "Error al guardar el registro", error)
+                mensajeResultado = "No se pudo guardar. Inténtalo de nuevo."
+                return@launch
+            } finally {
+                guardando = false
             }
-        }.start()
+
+            alGuardarCorrectamente()
+        }
     }
 }

@@ -1,48 +1,51 @@
 package com.example.lemacdatalab.viewmodel
 
-import android.os.Handler
-import android.os.Looper
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import com.example.lemacdatalab.datos.BaseDatosRegistros
+import androidx.lifecycle.viewModelScope
+import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.model.RegistroActividad
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 
-class HistorialViewModel : ViewModel() {
+class HistorialViewModel(
+    private val repositorio: RepositorioRegistros
+) : ViewModel() {
 
     var registros by mutableStateOf<List<RegistroActividad>>(emptyList())
         private set
 
-    var cargando by mutableStateOf(false)
+    var cargando by mutableStateOf(true)
         private set
 
     var mensajeError by mutableStateOf("")
         private set
 
-    fun cargarRegistros(baseDatos: BaseDatosRegistros) {
-        if (cargando) return
+    init {
+        observarRegistros()
+    }
 
-        cargando = true
-        mensajeError = ""
-        val hiloPrincipal = Handler(Looper.getMainLooper())
-
-        Thread {
-            val resultado = try {
-                baseDatos.obtenerTodos()
-            } catch (_: Exception) {
-                null
-            }
-
-            hiloPrincipal.post {
-                cargando = false
-
-                if (resultado == null) {
+    private fun observarRegistros() {
+        viewModelScope.launch {
+            repositorio.observarRegistros()
+                .catch { error ->
+                    Log.e(
+                        "HistorialViewModel",
+                        "Error al consultar los registros",
+                        error
+                    )
+                    cargando = false
                     mensajeError = "No se pudieron cargar los registros."
-                } else {
-                    registros = resultado
                 }
-            }
-        }.start()
+                .collect { lista ->
+                    registros = lista
+                    cargando = false
+                    mensajeError = ""
+                }
+        }
     }
 }

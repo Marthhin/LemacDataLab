@@ -3,10 +3,14 @@ package com.example.lemacdatalab
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.lemacdatalab.datos.BaseDatosRegistros
+import com.example.lemacdatalab.datos.BaseDatosRoom
+import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.navigation.Rutas
 import com.example.lemacdatalab.ui.pantallas.PantallaHistorial
 import com.example.lemacdatalab.ui.pantallas.PantallaInicio
@@ -20,10 +24,40 @@ import com.example.lemacdatalab.viewmodel.RegistroViewModel
 
 class MainActivity : ComponentActivity() {
 
-    private val inicioViewModel = InicioViewModel()
-    private val registroViewModel = RegistroViewModel()
-    private val historialViewModel = HistorialViewModel()
-    private val baseDatos by lazy { BaseDatosRegistros(applicationContext) }
+    private val repositorio by lazy {
+        RepositorioRegistros(
+            BaseDatosRoom.obtenerInstancia(applicationContext).registroDao()
+        )
+    }
+
+    private val fabricaViewModels by lazy {
+        viewModelFactory {
+            initializer {
+                RegistroViewModel(repositorio)
+            }
+            initializer {
+                HistorialViewModel(repositorio)
+            }
+        }
+    }
+
+    private val inicioViewModel by lazy {
+        ViewModelProvider(this)[InicioViewModel::class.java]
+    }
+
+    private val registroViewModel by lazy {
+        ViewModelProvider(
+            this,
+            fabricaViewModels
+        )[RegistroViewModel::class.java]
+    }
+
+    private val historialViewModel by lazy {
+        ViewModelProvider(
+            this,
+            fabricaViewModels
+        )[HistorialViewModel::class.java]
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,7 +78,6 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate(Rutas.REGISTRO)
                             },
                             alVerHistorial = {
-                                historialViewModel.cargarRegistros(baseDatos)
                                 navController.navigate(Rutas.HISTORIAL)
                             },
                             alVerRecordatorios = {
@@ -74,8 +107,12 @@ class MainActivity : ComponentActivity() {
                             alCambiarNota = registroViewModel::cambiarNota,
                             alCambiarAmbito = registroViewModel::cambiarAmbito,
                             alGuardar = {
-                                registroViewModel.guardarRegistro(baseDatos) {
-                                    navController.navigate(Rutas.RESULTADO)
+                                registroViewModel.guardarRegistro {
+                                    navController.navigate(Rutas.RESULTADO) {
+                                        popUpTo(Rutas.REGISTRO) {
+                                            inclusive = true
+                                        }
+                                    }
                                 }
                             }
                         )
