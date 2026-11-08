@@ -35,6 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.ui.componentes.TarjetaOpcion
 import com.example.lemacdatalab.ui.componentes.TarjetaPrincipal
+import com.example.lemacdatalab.ui.componentes.TarjetaSinRegistros
+import com.example.lemacdatalab.ui.componentes.TarjetaUltimoRegistro
 import com.example.lemacdatalab.viewmodel.InicioViewModel
 
 @Composable
@@ -116,22 +118,7 @@ fun PantallaInicio(
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        Text(
-            text = when {
-                viewModel.cargando -> "Cargando tu resumen..."
-                viewModel.mensajeError.isNotEmpty() -> viewModel.mensajeError
-                viewModel.totalRegistros == 1 -> "Tienes 1 registro guardado"
-                else -> "Tienes ${viewModel.totalRegistros} registros guardados"
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (viewModel.mensajeError.isNotEmpty()) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         TarjetaPrincipal(
             opcion = viewModel.principal,
@@ -140,11 +127,38 @@ fun PantallaInicio(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        Text(
-            text = "Más opciones",
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            TituloSeccion(
+                texto = "TU ÚLTIMO REGISTRO",
+                modifier = Modifier.weight(1f)
+            )
+            if (!viewModel.cargando && viewModel.totalRegistros > 0) {
+                Text(
+                    text = "${viewModel.totalRegistros} en total",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        val ultimo = viewModel.ultimoRegistro
+        when {
+            viewModel.cargando -> Unit
+            viewModel.mensajeError.isNotEmpty() -> Text(
+                text = viewModel.mensajeError,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error
+            )
+            ultimo == null -> TarjetaSinRegistros(alPresionar = alRegistrar)
+            else -> TarjetaUltimoRegistro(registro = ultimo, alPresionar = alVerHistorial)
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        TituloSeccion(texto = "MÁS OPCIONES")
 
         viewModel.secundarias.forEach { opcion ->
             TarjetaOpcion(
@@ -166,4 +180,14 @@ fun PantallaInicio(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+@Composable
+private fun TituloSeccion(texto: String, modifier: Modifier = Modifier) {
+    Text(
+        text = texto,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier
+    )
 }
