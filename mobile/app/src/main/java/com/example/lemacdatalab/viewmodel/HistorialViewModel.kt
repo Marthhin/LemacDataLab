@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.datos.SesionUsuario
+import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.RegistroActividad
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -37,8 +38,20 @@ class HistorialViewModel(
     var mensajeOperacion by mutableStateOf("")
         private set
 
+    var filtro by mutableStateOf<Ambito?>(null)
+        private set
+
+    val registrosVisibles: List<RegistroActividad>
+        get() = filtro?.let { ambito ->
+            registros.filter { it.idAmbito == ambito.id }
+        } ?: registros
+
     init {
         observarRegistros()
+    }
+
+    fun cambiarFiltro(ambito: Ambito?) {
+        filtro = ambito
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

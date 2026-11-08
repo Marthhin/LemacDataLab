@@ -14,7 +14,14 @@ interface RegistroDao {
     @Insert
     suspend fun insertar(registro: RegistroActividad): Long
 
-    @Query("SELECT * FROM registros WHERE id_usuario = :idUsuario ORDER BY id_registro DESC")
+    @Query(
+        """
+        SELECT * FROM registros
+        WHERE id_usuario = :idUsuario
+        ORDER BY substr(fecha_hora, 7, 4) || substr(fecha_hora, 4, 2) || substr(fecha_hora, 1, 2) DESC,
+                 id_registro DESC
+        """
+    )
     fun observarRegistros(idUsuario: Int): Flow<List<RegistroActividad>>
 
     @Query("SELECT * FROM registros WHERE id_registro = :id")

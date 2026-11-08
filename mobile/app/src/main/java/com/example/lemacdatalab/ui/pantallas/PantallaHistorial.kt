@@ -14,28 +14,38 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.FilterAltOff
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.RegistroActividad
 import com.example.lemacdatalab.ui.componentes.TarjetaRegistro
+import com.example.lemacdatalab.util.mesDeFecha
 
 @Composable
 fun PantallaHistorial(
     registros: List<RegistroActividad>,
+    hayRegistros: Boolean,
+    filtro: Ambito?,
     cargando: Boolean,
     mensajeError: String,
+    alCambiarFiltro: (Ambito?) -> Unit,
     alVerDetalle: (Int) -> Unit,
     alVolver: () -> Unit
 ) {
@@ -79,6 +89,10 @@ fun PantallaHistorial(
             }
         }
 
+        if (hayRegistros) {
+            FiltrosAmbito(filtro = filtro, alCambiarFiltro = alCambiarFiltro)
+        }
+
         when {
             cargando -> EstadoHistorial(modifier = Modifier.weight(1f)) {
                 CircularProgressIndicator()
@@ -92,13 +106,10 @@ fun PantallaHistorial(
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.error
                 )
-                Text(
-                    text = mensajeError,
-                    color = MaterialTheme.colorScheme.error
-                )
+                Text(text = mensajeError, color = MaterialTheme.colorScheme.error)
             }
 
-            registros.isEmpty() -> EstadoHistorial(modifier = Modifier.weight(1f)) {
+            !hayRegistros -> EstadoHistorial(modifier = Modifier.weight(1f)) {
                 Icon(
                     imageVector = Icons.Rounded.History,
                     contentDescription = null,
@@ -116,22 +127,86 @@ fun PantallaHistorial(
                 )
             }
 
-            else -> LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentPadding = PaddingValues(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(
-                    items = registros,
-                    key = { it.idRegistro }
-                ) { registro ->
-                    TarjetaRegistro(
-                        registro = registro,
-                        alPresionar = { alVerDetalle(registro.idRegistro) }
-                    )
+            registros.isEmpty() -> EstadoHistorial(modifier = Modifier.weight(1f)) {
+                Icon(
+                    imageVector = Icons.Rounded.FilterAltOff,
+                    contentDescription = null,
+                    modifier = Modifier.size(56.dp),
+                    tint = MaterialTheme.colorScheme.outline
+                )
+                Text(
+                    text = "No hay registros de ${filtro?.nombre ?: "este ámbito"}",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                TextButton(onClick = { alCambiarFiltro(null) }) {
+                    Text("Ver todos")
                 }
+            }
+
+            else -> ListaPorMes(
+                registros = registros,
+                alVerDetalle = alVerDetalle,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun FiltrosAmbito(
+    filtro: Ambito?,
+    alCambiarFiltro: (Ambito?) -> Unit
+) {
+    val opciones = listOf<Ambito?>(null) + Ambito.entries
+
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(opciones) { opcion ->
+            val seleccionado = filtro == opcion
+            FilterChip(
+                selected = seleccionado,
+                onClick = { alCambiarFiltro(opcion) },
+                label = { Text(opcion?.nombre ?: "Todos") },
+                leadingIcon = if (seleccionado) {
+                    { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                } else {
+                    null
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun ListaPorMes(
+    registros: List<RegistroActividad>,
+    alVerDetalle: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val grupos = registros.groupBy { mesDeFecha(it.fechaHora) }
+
+    LazyColumn(
+        modifier = modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        grupos.forEach { (mes, lista) ->
+            item(key = "mes_$mes") {
+                Text(
+                    text = mes.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
+            items(items = lista, key = { it.idRegistro }) { registro ->
+                TarjetaRegistro(
+                    registro = registro,
+                    alPresionar = { alVerDetalle(registro.idRegistro) }
+                )
             }
         }
     }

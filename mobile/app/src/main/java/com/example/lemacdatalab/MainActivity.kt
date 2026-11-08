@@ -194,9 +194,12 @@ class MainActivity : ComponentActivity() {
 
                     composable(Rutas.HISTORIAL) {
                         PantallaHistorial(
-                            registros = historialViewModel.registros,
+                            registros = historialViewModel.registrosVisibles,
+                            hayRegistros = historialViewModel.registros.isNotEmpty(),
+                            filtro = historialViewModel.filtro,
                             cargando = historialViewModel.cargando,
                             mensajeError = historialViewModel.mensajeError,
+                            alCambiarFiltro = historialViewModel::cambiarFiltro,
                             alVerDetalle = { id ->
                                 navController.navigate(Rutas.detalle(id))
                             },
