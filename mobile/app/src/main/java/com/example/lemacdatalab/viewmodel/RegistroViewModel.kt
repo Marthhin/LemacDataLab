@@ -8,7 +8,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.datos.SesionUsuario
+import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.RegistroActividad
+import com.example.lemacdatalab.util.esFechaFutura
+import com.example.lemacdatalab.util.fechaDeHoy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -26,7 +29,7 @@ class RegistroViewModel(
     var contexto by mutableStateOf("")
         private set
 
-    var intensidad by mutableStateOf("")
+    var intensidad by mutableStateOf(INTENSIDAD_INICIAL.toString())
         private set
 
     var nota by mutableStateOf("")
@@ -70,10 +73,10 @@ class RegistroViewModel(
         registroEnEdicion = null
         registroActual = null
 
-        fechaHora = ""
+        fechaHora = fechaDeHoy()
         tipoActividad = ""
         contexto = ""
-        intensidad = ""
+        intensidad = INTENSIDAD_INICIAL.toString()
         nota = ""
         ambito = ""
 
@@ -89,16 +92,9 @@ class RegistroViewModel(
         fechaHora = registro.fechaHora
         tipoActividad = registro.tipoActividad
         contexto = registro.contexto
-        intensidad = registro.intensidad.toString()
+        intensidad = registro.intensidad.coerceIn(INTENSIDAD_MINIMA, INTENSIDAD_MAXIMA).toString()
         nota = registro.nota.orEmpty()
-
-        ambito = when (registro.idAmbito) {
-            1 -> "Neurodesarrollo"
-            2 -> "DBT"
-            3 -> "Estado de ánimo"
-            4 -> "Adicciones"
-            else -> ""
-        }
+        ambito = Ambito.desdeId(registro.idAmbito)?.nombre.orEmpty()
 
         limpiarErrores()
     }
@@ -142,8 +138,11 @@ class RegistroViewModel(
     }
 
     private fun validarFormulario(): Boolean {
-        errorFechaHora =
-            if (fechaHora.isBlank()) "Selecciona una fecha" else null
+        errorFechaHora = when {
+            fechaHora.isBlank() -> "Selecciona una fecha"
+            esFechaFutura(fechaHora) -> "La fecha no puede ser posterior a hoy"
+            else -> null
+        }
 
         errorTipoActividad =
             if (tipoActividad.isBlank()) "La actividad es obligatoria" else null
@@ -152,12 +151,13 @@ class RegistroViewModel(
             if (contexto.isBlank()) "Ingresa el contexto" else null
 
         errorAmbito =
-            if (ambito.isBlank()) "Selecciona un ámbito" else null
+            if (Ambito.entries.none { it.nombre == ambito }) "Selecciona un ámbito" else null
 
+        val valorIntensidad = intensidad.toIntOrNull()
         errorIntensidad = when {
-            intensidad.isBlank() -> "Ingresa la intensidad"
-            intensidad.toIntOrNull() == null ->
-                "La intensidad debe ser un número entero"
+            valorIntensidad == null -> "Selecciona una intensidad"
+            valorIntensidad !in INTENSIDAD_MINIMA..INTENSIDAD_MAXIMA ->
+                "La intensidad debe estar entre $INTENSIDAD_MINIMA y $INTENSIDAD_MAXIMA"
             else -> null
         }
 
@@ -177,17 +177,7 @@ class RegistroViewModel(
     fun guardarRegistro(alGuardarCorrectamente: () -> Unit) {
         if (guardando || !validarFormulario()) return
 
-        val idAmbitoSeleccionado = when (ambito) {
-            "Neurodesarrollo" -> 1
-            "DBT" -> 2
-            "Estado de ánimo" -> 3
-            "Adicciones" -> 4
-            else -> {
-                errorAmbito = "Selecciona un ámbito"
-                return
-            }
-        }
-
+        val ambitoSeleccionado = Ambito.entries.first { it.nombre == ambito }
         val original = registroEnEdicion
 
         val idUsuario = original?.idUsuario ?: sesion.actual.value?.idUsuario
@@ -199,7 +189,7 @@ class RegistroViewModel(
         val registro = RegistroActividad(
             idRegistro = original?.idRegistro ?: 0,
             idUsuario = idUsuario,
-            idAmbito = idAmbitoSeleccionado,
+            idAmbito = ambitoSeleccionado.id,
             fechaHora = fechaHora,
             tipoActividad = tipoActividad.trim(),
             intensidad = intensidad.toInt(),
@@ -224,9 +214,7 @@ class RegistroViewModel(
                         "La base de datos no devolvió un identificador válido"
                     }
 
-                    registroActual = registro.copy(
-                        idRegistro = idGuardado.toInt()
-                    )
+                    registroActual = registro.copy(idRegistro = idGuardado.toInt())
                     mensajeResultado = "Registro guardado en el dispositivo"
                 } else {
                     val filasActualizadas = repositorio.actualizar(registro)
@@ -241,11 +229,7 @@ class RegistroViewModel(
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
-                Log.e(
-                    "RegistroViewModel",
-                    "Error al guardar o actualizar el registro",
-                    error
-                )
+                Log.e("RegistroViewModel", "Error al guardar o actualizar el registro", error)
                 mensajeResultado = "No se pudieron guardar los cambios. Inténtalo de nuevo."
                 return@launch
             } finally {
@@ -254,5 +238,11 @@ class RegistroViewModel(
 
             alGuardarCorrectamente()
         }
+    }
+
+    companion object {
+        const val INTENSIDAD_MINIMA = 1
+        const val INTENSIDAD_MAXIMA = 10
+        const val INTENSIDAD_INICIAL = 5
     }
 }

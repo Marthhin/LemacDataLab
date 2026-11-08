@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -32,15 +31,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.lemacdatalab.model.Ambito
+import com.example.lemacdatalab.util.formatearFecha
+import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_INICIAL
+import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_MAXIMA
+import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_MINIMA
 import java.util.Calendar
-import java.util.Locale
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -68,49 +72,25 @@ fun PantallaRegistro(
 ) {
     val contextoAndroid = LocalContext.current
 
-    val ambitos = listOf(
-        "Neurodesarrollo",
-        "DBT",
-        "Estado de ánimo",
-        "Adicciones"
-    )
-
     fun abrirCalendario() {
         val calendario = Calendar.getInstance()
-        val partes = fechaHora.split("/")
+        val partes = fechaHora.split("/").map { it.toIntOrNull() }
 
-        if (partes.size == 3) {
-            val dia = partes[0].toIntOrNull()
-            val mes = partes[1].toIntOrNull()
-            val anio = partes[2].toIntOrNull()
-
-            if (
-                dia != null &&
-                mes != null &&
-                anio != null &&
-                mes in 1..12
-            ) {
-                calendario.set(anio, mes - 1, dia)
-            }
+        if (partes.size == 3 && partes.none { it == null } && partes[1] in 1..12) {
+            calendario.set(partes[2]!!, partes[1]!! - 1, partes[0]!!)
         }
 
         DatePickerDialog(
             contextoAndroid,
             { _, anio, mes, dia ->
-                val fechaElegida = String.format(
-                    Locale.ROOT,
-                    "%02d/%02d/%04d",
-                    dia,
-                    mes + 1,
-                    anio
-                )
-
-                alCambiarFechaHora(fechaElegida)
+                alCambiarFechaHora(formatearFecha(dia, mes + 1, anio))
             },
             calendario.get(Calendar.YEAR),
             calendario.get(Calendar.MONTH),
             calendario.get(Calendar.DAY_OF_MONTH)
-        ).show()
+        ).apply {
+            datePicker.maxDate = System.currentTimeMillis()
+        }.show()
     }
 
     Column(
@@ -143,13 +123,13 @@ fun PantallaRegistro(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                ambitos.forEach { opcion ->
-                    val seleccionado = ambito == opcion
+                Ambito.entries.forEach { opcion ->
+                    val seleccionado = ambito == opcion.nombre
 
                     FilterChip(
                         selected = seleccionado,
-                        onClick = { alCambiarAmbito(opcion) },
-                        label = { Text(opcion) },
+                        onClick = { alCambiarAmbito(opcion.nombre) },
+                        label = { Text(opcion.nombre) },
                         leadingIcon = if (seleccionado) {
                             {
                                 Icon(
@@ -201,9 +181,7 @@ fun PantallaRegistro(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = fechaHora.ifEmpty {
-                            "Selecciona una fecha"
-                        },
+                        text = fechaHora.ifEmpty { "Selecciona una fecha" },
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
@@ -253,22 +231,10 @@ fun PantallaRegistro(
         }
 
         SeccionRegistro(titulo = "Intensidad") {
-            OutlinedTextField(
-                value = intensidad,
-                onValueChange = alCambiarIntensidad,
-                label = { Text("Intensidad") },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number
-                ),
-                isError = errorIntensidad != null,
-                supportingText = {
-                    Text(
-                        text = errorIntensidad
-                            ?: "Ingresa un número entero."
-                    )
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+            SelectorIntensidad(
+                intensidad = intensidad,
+                error = errorIntensidad,
+                alCambiar = alCambiarIntensidad
             )
         }
 
@@ -291,11 +257,7 @@ fun PantallaRegistro(
                 .heightIn(min = 56.dp)
         ) {
             Text(
-                text = if (editando) {
-                    "Guardar cambios"
-                } else {
-                    "Guardar registro"
-                },
+                text = if (editando) "Guardar cambios" else "Guardar registro",
                 style = MaterialTheme.typography.titleMedium
             )
         }
@@ -307,6 +269,75 @@ fun PantallaRegistro(
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
+    }
+}
+
+@Composable
+private fun SelectorIntensidad(
+    intensidad: String,
+    error: String?,
+    alCambiar: (String) -> Unit
+) {
+    val valor = intensidad.toIntOrNull()
+        ?.coerceIn(INTENSIDAD_MINIMA, INTENSIDAD_MAXIMA)
+        ?: INTENSIDAD_INICIAL
+
+    val descripcion = when (valor) {
+        in 1..3 -> "Baja"
+        in 4..7 -> "Media"
+        else -> "Alta"
+    }
+
+    Row(verticalAlignment = Alignment.Bottom) {
+        Text(
+            text = valor.toString(),
+            style = MaterialTheme.typography.displaySmall,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Text(
+            text = " / $INTENSIDAD_MAXIMA",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 6.dp)
+        )
+        Text(
+            text = descripcion.uppercase(),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .weight(1f)
+                .padding(bottom = 10.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.End
+        )
+    }
+
+    Slider(
+        value = valor.toFloat(),
+        onValueChange = { alCambiar(it.roundToInt().toString()) },
+        valueRange = INTENSIDAD_MINIMA.toFloat()..INTENSIDAD_MAXIMA.toFloat(),
+        steps = INTENSIDAD_MAXIMA - INTENSIDAD_MINIMA - 1
+    )
+
+    Row(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = "$INTENSIDAD_MINIMA · Baja",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+        Text(
+            text = "Alta · $INTENSIDAD_MAXIMA",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
+    if (error != null) {
+        Text(
+            text = error,
+            color = MaterialTheme.colorScheme.error,
+            style = MaterialTheme.typography.bodySmall
+        )
     }
 }
 
