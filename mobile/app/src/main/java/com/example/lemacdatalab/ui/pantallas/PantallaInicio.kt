@@ -33,10 +33,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.lemacdatalab.ui.componentes.TarjetaCartaAnimo
 import com.example.lemacdatalab.ui.componentes.TarjetaOpcion
 import com.example.lemacdatalab.ui.componentes.TarjetaPrincipal
-import com.example.lemacdatalab.ui.componentes.TarjetaSinRegistros
 import com.example.lemacdatalab.ui.componentes.TarjetaRegistro
+import com.example.lemacdatalab.ui.componentes.TarjetaSinRegistros
 import com.example.lemacdatalab.viewmodel.InicioViewModel
 
 @Composable
@@ -158,6 +159,11 @@ fun PantallaInicio(
                 registro = ultimo,
                 alPresionar = { alVerRegistro(ultimo.idRegistro) }
             )
+        }
+
+        if (!viewModel.cargando && viewModel.totalRegistros > 0) {
+            Spacer(modifier = Modifier.height(4.dp))
+            TarjetaCartaAnimo(puntos = viewModel.puntosGrafico)
         }
 
         Spacer(modifier = Modifier.height(8.dp))

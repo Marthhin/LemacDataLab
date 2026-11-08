@@ -14,7 +14,11 @@ import androidx.lifecycle.viewModelScope
 import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.datos.SesionUsuario
 import com.example.lemacdatalab.model.OpcionInicio
+import com.example.lemacdatalab.model.PuntoGrafico
 import com.example.lemacdatalab.model.RegistroActividad
+import com.example.lemacdatalab.util.claveFecha
+import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_MAXIMA
+import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_MINIMA
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
@@ -62,6 +66,9 @@ class InicioViewModel(
     var ultimoRegistro by mutableStateOf<RegistroActividad?>(null)
         private set
 
+    var puntosGrafico by mutableStateOf<List<PuntoGrafico>>(emptyList())
+        private set
+
     var cargando by mutableStateOf(true)
         private set
 
@@ -102,9 +109,30 @@ class InicioViewModel(
                 .collect { lista ->
                     totalRegistros = lista.size
                     ultimoRegistro = lista.maxByOrNull { it.idRegistro }
+                    puntosGrafico = calcularPuntos(lista)
                     cargando = false
                     mensajeError = ""
                 }
         }
+    }
+
+    private fun calcularPuntos(lista: List<RegistroActividad>): List<PuntoGrafico> {
+        return lista
+            .groupBy { it.fechaHora }
+            .mapNotNull { (fecha, delDia) ->
+                val clave = claveFecha(fecha) ?: return@mapNotNull null
+                val promedio = delDia
+                    .map { it.intensidad.coerceIn(INTENSIDAD_MINIMA, INTENSIDAD_MAXIMA) }
+                    .average()
+                    .toFloat()
+                clave to PuntoGrafico(fecha, promedio)
+            }
+            .sortedBy { (clave, _) -> clave }
+            .takeLast(MAXIMO_PUNTOS)
+            .map { (_, punto) -> punto }
+    }
+
+    private companion object {
+        const val MAXIMO_PUNTOS = 10
     }
 }
