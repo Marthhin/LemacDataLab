@@ -108,6 +108,7 @@ class MainActivity : ComponentActivity() {
                     composable(Rutas.INICIO) {
                         PantallaInicio(
                             viewModel = inicioViewModel,
+                            alias = sesion.alias,
                             alRegistrar = {
                                 registroViewModel.comenzarNuevoRegistro()
                                 navController.navigate(Rutas.REGISTRO)
@@ -117,6 +118,14 @@ class MainActivity : ComponentActivity() {
                             },
                             alVerRecordatorios = {
                                 navController.navigate(Rutas.RECORDATORIOS)
+                            },
+                            alCerrarSesion = {
+                                sesion.cerrar()
+                                navController.navigate(Rutas.LOGIN) {
+                                    popUpTo(navController.graph.id) {
+                                        inclusive = true
+                                    }
+                                }
                             }
                         )
                     }
