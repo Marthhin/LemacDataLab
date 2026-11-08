@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -29,19 +28,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.Mood
 import androidx.compose.material.icons.rounded.Place
-import androidx.compose.material.icons.rounded.Psychology
-import androidx.compose.material.icons.rounded.SelfImprovement
-import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -51,16 +45,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.RegistroActividad
+import com.example.lemacdatalab.ui.componentes.BarraIntensidad
+import com.example.lemacdatalab.ui.componentes.FilaDato
+import com.example.lemacdatalab.ui.componentes.IconoAmbito
 
 @Composable
 fun PantallaResultado(
     registro: RegistroActividad?,
-    alVolver: () -> Unit
+    editando: Boolean,
+    alVolver: () -> Unit,
+    alRegistrarOtra: () -> Unit
 ) {
     var mostrar by remember(registro?.idRegistro) { mutableStateOf(false) }
 
@@ -98,7 +97,11 @@ fun PantallaResultado(
         }
 
         Text(
-            text = if (registro == null) "Sin registro" else "¡Actividad guardada!",
+            text = when {
+                registro == null -> "Sin registro"
+                editando -> "¡Cambios guardados!"
+                else -> "¡Actividad guardada!"
+            },
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -135,18 +138,22 @@ fun PantallaResultado(
         ) {
             Text("Volver al inicio", style = MaterialTheme.typography.titleMedium)
         }
+
+        OutlinedButton(
+            onClick = alRegistrarOtra,
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(52.dp)
+        ) {
+            Text("Registrar otra actividad")
+        }
     }
 }
 
 @Composable
 private fun TarjetaResumen(registro: RegistroActividad) {
-    val (nombreAmbito, iconoAmbito) = when (registro.idAmbito) {
-        1 -> "Neurodesarrollo" to Icons.Rounded.Psychology
-        2 -> "DBT" to Icons.Rounded.SelfImprovement
-        3 -> "Estado de ánimo" to Icons.Rounded.Mood
-        4 -> "Adicciones" to Icons.Rounded.Favorite
-        else -> "Sin identificar" to Icons.Rounded.Info
-    }
+    val ambito = Ambito.desdeId(registro.idAmbito)
 
     Card(
         shape = RoundedCornerShape(20.dp),
@@ -157,29 +164,15 @@ private fun TarjetaResumen(registro: RegistroActividad) {
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .background(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            RoundedCornerShape(12.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = iconoAmbito,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                }
+                IconoAmbito(ambito = ambito)
 
                 Column(modifier = Modifier.padding(start = 12.dp)) {
                     Text(registro.tipoActividad, style = MaterialTheme.typography.titleMedium)
                     Text(
-                        nombreAmbito,
+                        text = ambito?.nombre ?: "Sin ámbito",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -189,37 +182,17 @@ private fun TarjetaResumen(registro: RegistroActividad) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
             FilaDato(Icons.Rounded.CalendarMonth, "Fecha", registro.fechaHora)
-            FilaDato(Icons.Rounded.Speed, "Intensidad", registro.intensidad.toString())
+            BarraIntensidad(intensidad = registro.intensidad)
             FilaDato(Icons.Rounded.Place, "Contexto", registro.contexto)
 
             if (!registro.nota.isNullOrBlank()) {
                 Text(
-                    text = "\"${registro.nota}\"",
+                    text = "“${registro.nota}”",
                     style = MaterialTheme.typography.bodyMedium,
                     fontStyle = FontStyle.Italic,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun FilaDato(icono: ImageVector, etiqueta: String, valor: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            imageVector = icono,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(18.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = etiqueta,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f)
-        )
-        Text(text = valor, style = MaterialTheme.typography.bodyMedium)
     }
 }

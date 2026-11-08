@@ -26,7 +26,6 @@ import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.SearchOff
-import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -50,6 +49,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.RegistroActividad
+import com.example.lemacdatalab.ui.componentes.BarraIntensidad
 import com.example.lemacdatalab.ui.componentes.FilaDato
 import com.example.lemacdatalab.ui.componentes.IconoAmbito
 
@@ -180,10 +180,10 @@ private fun ContenidoDetalle(
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 FilaDato(Icons.Rounded.CalendarMonth, "Fecha", registro.fechaHora)
-                FilaDato(Icons.Rounded.Speed, "Intensidad", registro.intensidad.toString())
+                BarraIntensidad(intensidad = registro.intensidad)
                 FilaDato(Icons.Rounded.Place, "Contexto", registro.contexto)
             }
         }

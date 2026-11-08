@@ -23,11 +23,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -37,6 +39,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.util.formatearFecha
@@ -68,7 +71,8 @@ fun PantallaRegistro(
     alCambiarIntensidad: (String) -> Unit,
     alCambiarNota: (String) -> Unit,
     alCambiarAmbito: (String) -> Unit,
-    alGuardar: () -> Unit
+    alGuardar: () -> Unit,
+    alCerrar: () -> Unit
 ) {
     val contextoAndroid = LocalContext.current
 
@@ -99,14 +103,22 @@ fun PantallaRegistro(
             .background(MaterialTheme.colorScheme.background)
             .windowInsetsPadding(WindowInsets.safeDrawing)
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp, vertical = 24.dp),
+            .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(
-            text = if (editando) "Editar registro" else "Nuevo registro",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(
+                onClick = alCerrar,
+                modifier = Modifier.padding(end = 4.dp)
+            ) {
+                Icon(Icons.Rounded.Close, contentDescription = "Cerrar sin guardar")
+            }
+            Text(
+                text = if (editando) "Editar registro" else "Nuevo registro",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+        }
 
         Text(
             text = if (editando) {
@@ -304,10 +316,10 @@ private fun SelectorIntensidad(
             text = descripcion.uppercase(),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.End,
             modifier = Modifier
                 .weight(1f)
-                .padding(bottom = 10.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.End
+                .padding(bottom = 10.dp)
         )
     }
 

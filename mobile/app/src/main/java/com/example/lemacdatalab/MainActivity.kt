@@ -174,6 +174,9 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                 }
+                            },
+                            alCerrar = {
+                                navController.popBackStack()
                             }
                         )
                     }
@@ -181,12 +184,21 @@ class MainActivity : ComponentActivity() {
                     composable(Rutas.RESULTADO) {
                         PantallaResultado(
                             registro = registroViewModel.registroActual,
+                            editando = registroViewModel.editando,
                             alVolver = {
                                 navController.navigate(Rutas.INICIO) {
                                     popUpTo(Rutas.INICIO) {
                                         inclusive = false
                                     }
                                     launchSingleTop = true
+                                }
+                            },
+                            alRegistrarOtra = {
+                                registroViewModel.comenzarNuevoRegistro()
+                                navController.navigate(Rutas.REGISTRO) {
+                                    popUpTo(Rutas.RESULTADO) {
+                                        inclusive = true
+                                    }
                                 }
                             }
                         )
