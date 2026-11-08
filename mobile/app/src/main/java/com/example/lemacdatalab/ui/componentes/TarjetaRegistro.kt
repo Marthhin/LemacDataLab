@@ -23,7 +23,7 @@ import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.RegistroActividad
 
 @Composable
-fun TarjetaUltimoRegistro(
+fun TarjetaRegistro(
     registro: RegistroActividad,
     alPresionar: () -> Unit
 ) {

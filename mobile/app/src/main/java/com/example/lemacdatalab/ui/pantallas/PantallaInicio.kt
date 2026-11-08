@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.ui.componentes.TarjetaOpcion
 import com.example.lemacdatalab.ui.componentes.TarjetaPrincipal
 import com.example.lemacdatalab.ui.componentes.TarjetaSinRegistros
-import com.example.lemacdatalab.ui.componentes.TarjetaUltimoRegistro
+import com.example.lemacdatalab.ui.componentes.TarjetaRegistro
 import com.example.lemacdatalab.viewmodel.InicioViewModel
 
 @Composable
@@ -45,6 +45,7 @@ fun PantallaInicio(
     alias: String,
     alRegistrar: () -> Unit,
     alVerHistorial: () -> Unit,
+    alVerRegistro: (Int) -> Unit,
     alVerRecordatorios: () -> Unit,
     alCerrarSesion: () -> Unit
 ) {
@@ -153,7 +154,10 @@ fun PantallaInicio(
                 color = MaterialTheme.colorScheme.error
             )
             ultimo == null -> TarjetaSinRegistros(alPresionar = alRegistrar)
-            else -> TarjetaUltimoRegistro(registro = ultimo, alPresionar = alVerHistorial)
+            else -> TarjetaRegistro(
+                registro = ultimo,
+                alPresionar = { alVerRegistro(ultimo.idRegistro) }
+            )
         }
 
         Spacer(modifier = Modifier.height(8.dp))

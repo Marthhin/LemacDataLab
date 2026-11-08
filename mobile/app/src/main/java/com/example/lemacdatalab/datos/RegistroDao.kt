@@ -20,6 +20,9 @@ interface RegistroDao {
     @Query("SELECT * FROM registros WHERE id_registro = :id")
     suspend fun obtenerPorId(id: Int): RegistroActividad?
 
+    @Query("SELECT * FROM registros WHERE id_registro = :id")
+    fun observarPorId(id: Int): Flow<RegistroActividad?>
+
     @Update
     suspend fun actualizar(registro: RegistroActividad): Int
 

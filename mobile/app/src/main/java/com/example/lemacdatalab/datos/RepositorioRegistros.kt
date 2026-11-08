@@ -7,6 +7,10 @@ class RepositorioRegistros(
     private val registroDao: RegistroDao
 ) {
 
+    fun observarPorId(id: Int): Flow<RegistroActividad?> {
+        return registroDao.observarPorId(id)
+    }
+
     fun observarRegistros(idUsuario: Int): Flow<List<RegistroActividad>> {
         return registroDao.observarRegistros(idUsuario)
     }

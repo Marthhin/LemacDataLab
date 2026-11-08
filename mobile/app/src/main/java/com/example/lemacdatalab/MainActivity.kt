@@ -3,18 +3,22 @@ package com.example.lemacdatalab
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.lemacdatalab.datos.BaseDatosRoom
 import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.datos.RepositorioUsuarios
 import com.example.lemacdatalab.datos.SesionUsuario
 import com.example.lemacdatalab.navigation.Rutas
+import com.example.lemacdatalab.ui.pantallas.PantallaDetalle
 import com.example.lemacdatalab.ui.pantallas.PantallaHistorial
 import com.example.lemacdatalab.ui.pantallas.PantallaInicio
 import com.example.lemacdatalab.ui.pantallas.PantallaLogin
@@ -22,6 +26,7 @@ import com.example.lemacdatalab.ui.pantallas.PantallaRecordatorios
 import com.example.lemacdatalab.ui.pantallas.PantallaRegistro
 import com.example.lemacdatalab.ui.pantallas.PantallaResultado
 import com.example.lemacdatalab.ui.theme.LemacDataLabTheme
+import com.example.lemacdatalab.viewmodel.DetalleViewModel
 import com.example.lemacdatalab.viewmodel.HistorialViewModel
 import com.example.lemacdatalab.viewmodel.InicioViewModel
 import com.example.lemacdatalab.viewmodel.LoginViewModel
@@ -59,6 +64,9 @@ class MainActivity : ComponentActivity() {
             initializer {
                 HistorialViewModel(repositorio, sesion)
             }
+            initializer {
+                DetalleViewModel(repositorio, sesion)
+            }
         }
     }
 
@@ -76,6 +84,10 @@ class MainActivity : ComponentActivity() {
 
     private val historialViewModel by lazy {
         ViewModelProvider(this, fabricaViewModels)[HistorialViewModel::class.java]
+    }
+
+    private val detalleViewModel by lazy {
+        ViewModelProvider(this, fabricaViewModels)[DetalleViewModel::class.java]
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -115,6 +127,9 @@ class MainActivity : ComponentActivity() {
                             },
                             alVerHistorial = {
                                 navController.navigate(Rutas.HISTORIAL)
+                            },
+                            alVerRegistro = { id ->
+                                navController.navigate(Rutas.detalle(id))
                             },
                             alVerRecordatorios = {
                                 navController.navigate(Rutas.RECORDATORIOS)
@@ -182,14 +197,40 @@ class MainActivity : ComponentActivity() {
                             registros = historialViewModel.registros,
                             cargando = historialViewModel.cargando,
                             mensajeError = historialViewModel.mensajeError,
-                            eliminando = historialViewModel.eliminando,
-                            mensajeOperacion = historialViewModel.mensajeOperacion,
+                            alVerDetalle = { id ->
+                                navController.navigate(Rutas.detalle(id))
+                            },
+                            alVolver = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
+                    composable(
+                        route = Rutas.DETALLE,
+                        arguments = listOf(
+                            navArgument("idRegistro") { type = NavType.IntType }
+                        )
+                    ) { entrada ->
+                        val idRegistro = entrada.arguments?.getInt("idRegistro") ?: -1
+
+                        LaunchedEffect(idRegistro) {
+                            detalleViewModel.mostrar(idRegistro)
+                        }
+
+                        PantallaDetalle(
+                            registro = detalleViewModel.registro,
+                            cargando = detalleViewModel.cargando,
+                            eliminando = detalleViewModel.eliminando,
+                            mensajeError = detalleViewModel.mensajeError,
                             alEditar = { registro ->
                                 registroViewModel.comenzarEditarRegistro(registro)
                                 navController.navigate(Rutas.REGISTRO)
                             },
-                            alEliminar = { registro ->
-                                historialViewModel.eliminarRegistro(registro)
+                            alEliminar = {
+                                detalleViewModel.eliminar {
+                                    navController.popBackStack()
+                                }
                             },
                             alVolver = {
                                 navController.popBackStack()
