@@ -51,13 +51,13 @@ class MainActivity : ComponentActivity() {
                 LoginViewModel(repositorioUsuarios, sesion)
             }
             initializer {
-                InicioViewModel(repositorio)
+                InicioViewModel(repositorio, sesion)
             }
             initializer {
-                RegistroViewModel(repositorio)
+                RegistroViewModel(repositorio, sesion)
             }
             initializer {
-                HistorialViewModel(repositorio)
+                HistorialViewModel(repositorio, sesion)
             }
         }
     }
@@ -108,7 +108,7 @@ class MainActivity : ComponentActivity() {
                     composable(Rutas.INICIO) {
                         PantallaInicio(
                             viewModel = inicioViewModel,
-                            alias = sesion.alias,
+                            alias = inicioViewModel.alias,
                             alRegistrar = {
                                 registroViewModel.comenzarNuevoRegistro()
                                 navController.navigate(Rutas.REGISTRO)

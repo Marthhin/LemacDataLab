@@ -14,8 +14,8 @@ interface RegistroDao {
     @Insert
     suspend fun insertar(registro: RegistroActividad): Long
 
-    @Query("SELECT * FROM registros ORDER BY id_registro DESC")
-    fun observarRegistros(): Flow<List<RegistroActividad>>
+    @Query("SELECT * FROM registros WHERE id_usuario = :idUsuario ORDER BY id_registro DESC")
+    fun observarRegistros(idUsuario: Int): Flow<List<RegistroActividad>>
 
     @Query("SELECT * FROM registros WHERE id_registro = :id")
     suspend fun obtenerPorId(id: Int): RegistroActividad?

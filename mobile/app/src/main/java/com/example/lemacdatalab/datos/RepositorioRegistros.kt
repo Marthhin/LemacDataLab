@@ -7,8 +7,8 @@ class RepositorioRegistros(
     private val registroDao: RegistroDao
 ) {
 
-    fun observarRegistros(): Flow<List<RegistroActividad>> {
-        return registroDao.observarRegistros()
+    fun observarRegistros(idUsuario: Int): Flow<List<RegistroActividad>> {
+        return registroDao.observarRegistros(idUsuario)
     }
 
     suspend fun obtenerPorId(id: Int): RegistroActividad? {

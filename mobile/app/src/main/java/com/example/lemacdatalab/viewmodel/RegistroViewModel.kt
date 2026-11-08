@@ -7,12 +7,14 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lemacdatalab.datos.RepositorioRegistros
+import com.example.lemacdatalab.datos.SesionUsuario
 import com.example.lemacdatalab.model.RegistroActividad
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 class RegistroViewModel(
-    private val repositorio: RepositorioRegistros
+    private val repositorio: RepositorioRegistros,
+    private val sesion: SesionUsuario
 ) : ViewModel() {
 
     var fechaHora by mutableStateOf("")
@@ -188,9 +190,15 @@ class RegistroViewModel(
 
         val original = registroEnEdicion
 
+        val idUsuario = original?.idUsuario ?: sesion.actual.value?.idUsuario
+        if (idUsuario == null) {
+            mensajeResultado = "Tu sesión terminó. Vuelve a ingresar."
+            return
+        }
+
         val registro = RegistroActividad(
             idRegistro = original?.idRegistro ?: 0,
-            idUsuario = original?.idUsuario ?: 1,
+            idUsuario = idUsuario,
             idAmbito = idAmbitoSeleccionado,
             fechaHora = fechaHora,
             tipoActividad = tipoActividad.trim(),

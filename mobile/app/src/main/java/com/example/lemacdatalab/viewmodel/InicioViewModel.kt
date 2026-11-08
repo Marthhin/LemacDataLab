@@ -12,15 +12,20 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lemacdatalab.datos.RepositorioRegistros
+import com.example.lemacdatalab.datos.SesionUsuario
 import com.example.lemacdatalab.model.OpcionInicio
 import com.example.lemacdatalab.model.RegistroActividad
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import java.util.Calendar
-import kotlinx.coroutines.flow.collect
 
 class InicioViewModel(
-    private val repositorio: RepositorioRegistros
+    private val repositorio: RepositorioRegistros,
+    private val sesion: SesionUsuario
 ) : ViewModel() {
 
     val principal = OpcionInicio(
@@ -48,6 +53,9 @@ class InicioViewModel(
         )
     )
 
+    var alias by mutableStateOf("")
+        private set
+
     var totalRegistros by mutableStateOf(0)
         private set
 
@@ -71,9 +79,21 @@ class InicioViewModel(
         observarResumen()
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun observarResumen() {
         viewModelScope.launch {
-            repositorio.observarRegistros()
+            sesion.actual
+                .onEach { datos ->
+                    alias = datos?.alias.orEmpty()
+                    cargando = true
+                }
+                .flatMapLatest { datos ->
+                    if (datos == null) {
+                        flowOf(emptyList())
+                    } else {
+                        repositorio.observarRegistros(datos.idUsuario)
+                    }
+                }
                 .catch { error ->
                     Log.e("InicioViewModel", "Error al consultar el resumen", error)
                     cargando = false
