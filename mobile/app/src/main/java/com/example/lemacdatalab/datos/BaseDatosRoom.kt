@@ -7,15 +7,18 @@ import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.lemacdatalab.model.RegistroActividad
+import com.example.lemacdatalab.model.Usuario
 
 @Database(
-    entities = [RegistroActividad::class],
-    version = 2,
+    entities = [RegistroActividad::class, Usuario::class],
+    version = 3,
     exportSchema = true
 )
 abstract class BaseDatosRoom : RoomDatabase() {
 
     abstract fun registroDao(): RegistroDao
+
+    abstract fun usuarioDao(): UsuarioDao
 
     companion object {
 
@@ -72,6 +75,25 @@ abstract class BaseDatosRoom : RoomDatabase() {
             }
         }
 
+        private val MIGRACION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS usuarios (
+                        id_usuario INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        alias TEXT NOT NULL,
+                        contrasena_hash TEXT NOT NULL,
+                        sal TEXT NOT NULL
+                    )
+                    """.trimIndent()
+                )
+
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS index_usuarios_alias ON usuarios (alias)"
+                )
+            }
+        }
+
         fun obtenerInstancia(context: Context): BaseDatosRoom {
             return instancia ?: synchronized(this) {
                 instancia ?: Room.databaseBuilder(
@@ -79,7 +101,7 @@ abstract class BaseDatosRoom : RoomDatabase() {
                     BaseDatosRoom::class.java,
                     "lemac_registros.db"
                 )
-                    .addMigrations(MIGRACION_1_2)
+                    .addMigrations(MIGRACION_1_2, MIGRACION_2_3)
                     .build()
                     .also { instancia = it }
             }

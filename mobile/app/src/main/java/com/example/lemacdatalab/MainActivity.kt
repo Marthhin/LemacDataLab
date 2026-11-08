@@ -3,6 +3,7 @@ package com.example.lemacdatalab
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -11,27 +12,44 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.lemacdatalab.datos.BaseDatosRoom
 import com.example.lemacdatalab.datos.RepositorioRegistros
+import com.example.lemacdatalab.datos.RepositorioUsuarios
+import com.example.lemacdatalab.datos.SesionUsuario
 import com.example.lemacdatalab.navigation.Rutas
 import com.example.lemacdatalab.ui.pantallas.PantallaHistorial
 import com.example.lemacdatalab.ui.pantallas.PantallaInicio
+import com.example.lemacdatalab.ui.pantallas.PantallaLogin
 import com.example.lemacdatalab.ui.pantallas.PantallaRecordatorios
 import com.example.lemacdatalab.ui.pantallas.PantallaRegistro
 import com.example.lemacdatalab.ui.pantallas.PantallaResultado
 import com.example.lemacdatalab.ui.theme.LemacDataLabTheme
 import com.example.lemacdatalab.viewmodel.HistorialViewModel
 import com.example.lemacdatalab.viewmodel.InicioViewModel
+import com.example.lemacdatalab.viewmodel.LoginViewModel
 import com.example.lemacdatalab.viewmodel.RegistroViewModel
 
 class MainActivity : ComponentActivity() {
 
+    private val baseDatos by lazy {
+        BaseDatosRoom.obtenerInstancia(applicationContext)
+    }
+
     private val repositorio by lazy {
-        RepositorioRegistros(
-            BaseDatosRoom.obtenerInstancia(applicationContext).registroDao()
-        )
+        RepositorioRegistros(baseDatos.registroDao())
+    }
+
+    private val repositorioUsuarios by lazy {
+        RepositorioUsuarios(baseDatos.usuarioDao())
+    }
+
+    private val sesion by lazy {
+        SesionUsuario(applicationContext)
     }
 
     private val fabricaViewModels by lazy {
         viewModelFactory {
+            initializer {
+                LoginViewModel(repositorioUsuarios, sesion)
+            }
             initializer {
                 InicioViewModel(repositorio)
             }
@@ -44,25 +62,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private val loginViewModel by lazy {
+        ViewModelProvider(this, fabricaViewModels)[LoginViewModel::class.java]
+    }
+
     private val inicioViewModel by lazy {
-        ViewModelProvider(
-            this,
-            fabricaViewModels
-        )[InicioViewModel::class.java]
+        ViewModelProvider(this, fabricaViewModels)[InicioViewModel::class.java]
     }
 
     private val registroViewModel by lazy {
-        ViewModelProvider(
-            this,
-            fabricaViewModels
-        )[RegistroViewModel::class.java]
+        ViewModelProvider(this, fabricaViewModels)[RegistroViewModel::class.java]
     }
 
     private val historialViewModel by lazy {
-        ViewModelProvider(
-            this,
-            fabricaViewModels
-        )[HistorialViewModel::class.java]
+        ViewModelProvider(this, fabricaViewModels)[HistorialViewModel::class.java]
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,11 +84,27 @@ class MainActivity : ComponentActivity() {
         setContent {
             LemacDataLabTheme {
                 val navController = rememberNavController()
+                val destinoInicial = remember {
+                    if (sesion.haySesion) Rutas.INICIO else Rutas.LOGIN
+                }
 
                 NavHost(
                     navController = navController,
-                    startDestination = Rutas.INICIO
+                    startDestination = destinoInicial
                 ) {
+                    composable(Rutas.LOGIN) {
+                        PantallaLogin(
+                            viewModel = loginViewModel,
+                            alEntrar = {
+                                navController.navigate(Rutas.INICIO) {
+                                    popUpTo(Rutas.LOGIN) {
+                                        inclusive = true
+                                    }
+                                }
+                            }
+                        )
+                    }
+
                     composable(Rutas.INICIO) {
                         PantallaInicio(
                             viewModel = inicioViewModel,
