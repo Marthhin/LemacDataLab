@@ -50,7 +50,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.RegistroActividad
-import com.example.lemacdatalab.ui.componentes.BarraIntensidad
+import com.example.lemacdatalab.ui.componentes.BarrasEscala
 import com.example.lemacdatalab.ui.componentes.FilaDato
 import com.example.lemacdatalab.ui.componentes.FilasDetallesAmbito
 import com.example.lemacdatalab.ui.componentes.IconoAmbito
@@ -183,7 +183,7 @@ private fun TarjetaResumen(registro: RegistroActividad) {
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
             FilaDato(Icons.Rounded.CalendarMonth, "Fecha", registro.fechaHora)
-            BarraIntensidad(intensidad = registro.intensidad)
+            BarrasEscala(registro)
             FilaDato(Icons.Rounded.Place, "Contexto", registro.contexto)
             FilasDetallesAmbito(registro)
 

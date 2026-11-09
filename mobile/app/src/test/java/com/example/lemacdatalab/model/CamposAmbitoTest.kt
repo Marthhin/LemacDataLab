@@ -12,7 +12,7 @@ class CamposAmbitoTest {
         idAmbito = ambito.id,
         fechaHora = "09/11/2026",
         tipoActividad = "Prueba",
-        intensidad = 5,
+        intensidad = 2,
         contexto = "Contexto de prueba",
         nota = null,
         estado = "Prueba"
@@ -39,6 +39,32 @@ class CamposAmbitoTest {
     @Test
     fun registroSinCamposEspecificos_noMuestraDetalles() {
         assertTrue(detallesDeRegistro(registro(Ambito.ANIMO)).isEmpty())
+    }
+
+    @Test
+    fun opcionOtro_seGuardaConPrefijoYSeRecupera() {
+        val guardado = unirSeleccion(OPCION_OTRO, "  Escribir un diario ")
+
+        assertEquals("Otro: Escribir un diario", guardado)
+        assertEquals(
+            SeleccionCatalogo(OPCION_OTRO, "Escribir un diario"),
+            separarSeleccion(guardado, CamposAmbito.HABILIDADES_DBT)
+        )
+        assertNull(unirSeleccion(OPCION_OTRO, "  "))
+    }
+
+    @Test
+    fun textoAntiguoFueraDelCatalogo_quedaComoOtro() {
+        assertEquals(
+            SeleccionCatalogo(OPCION_OTRO, "Salí con mi perro"),
+            separarSeleccion("Salí con mi perro", CamposAmbito.ACCIONES_PROTECTORAS)
+        )
+    }
+
+    @Test
+    fun escala_muestraNumeroYEtiqueta() {
+        assertEquals("0 · Sin síntomas", Escala.describir(0))
+        assertEquals("4 · Severa", Escala.describir(9))
     }
 
     @Test

@@ -198,7 +198,7 @@ class HistorialViewModel(
 
         viewModelScope.launch {
             try {
-                repositorio.insertar(registro)
+                repositorio.restaurar(registro)
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {

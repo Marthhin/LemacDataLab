@@ -55,7 +55,12 @@ fun TarjetaRegistro(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "${ambito?.nombre ?: "Sin ámbito"} · ${registro.fechaHora}",
+                    text = buildString {
+                        append(ambito?.nombre ?: "Sin ámbito")
+                        append(" · ")
+                        append(registro.fechaHora)
+                        if (registro.editado) append(" · editado")
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

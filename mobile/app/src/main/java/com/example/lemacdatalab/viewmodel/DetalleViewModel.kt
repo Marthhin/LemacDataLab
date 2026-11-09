@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.datos.SesionUsuario
 import com.example.lemacdatalab.model.RegistroActividad
+import com.example.lemacdatalab.model.VersionRegistro
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,6 +30,9 @@ class DetalleViewModel(
     var registro by mutableStateOf<RegistroActividad?>(null)
         private set
 
+    var versiones by mutableStateOf<List<VersionRegistro>>(emptyList())
+        private set
+
     var cargando by mutableStateOf(true)
         private set
 
@@ -40,11 +44,13 @@ class DetalleViewModel(
 
     init {
         observarRegistro()
+        observarVersiones()
     }
 
     fun mostrar(idRegistro: Int) {
         if (idSeleccionado.value == idRegistro) return
         registro = null
+        versiones = emptyList()
         cargando = true
         eliminando = false
         mensajeError = ""
@@ -73,6 +79,21 @@ class DetalleViewModel(
                     registro = encontrado
                     cargando = false
                 }
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun observarVersiones() {
+        viewModelScope.launch {
+            idSeleccionado
+                .flatMapLatest { id ->
+                    if (id == null) flowOf(emptyList()) else repositorio.observarVersiones(id)
+                }
+                .catch { error ->
+                    Log.e("DetalleViewModel", "Error al consultar las versiones", error)
+                    emit(emptyList())
+                }
+                .collect { versiones = it }
         }
     }
 

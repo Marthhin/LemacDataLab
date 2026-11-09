@@ -1,6 +1,8 @@
 package com.example.lemacdatalab.ui.pantallas
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +26,9 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material3.AlertDialog
@@ -32,6 +37,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,15 +54,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.Ambito
+import com.example.lemacdatalab.model.Escala
 import com.example.lemacdatalab.model.RegistroActividad
-import com.example.lemacdatalab.ui.componentes.BarraIntensidad
+import com.example.lemacdatalab.model.VersionRegistro
+import com.example.lemacdatalab.ui.componentes.BarrasEscala
 import com.example.lemacdatalab.ui.componentes.FilaDato
 import com.example.lemacdatalab.ui.componentes.FilasDetallesAmbito
 import com.example.lemacdatalab.ui.componentes.IconoAmbito
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @Composable
 fun PantallaDetalle(
     registro: RegistroActividad?,
+    versiones: List<VersionRegistro>,
     cargando: Boolean,
     eliminando: Boolean,
     mensajeError: String,
@@ -72,7 +84,10 @@ fun PantallaDetalle(
             icon = { Icon(Icons.Rounded.Delete, contentDescription = null) },
             title = { Text("Eliminar registro") },
             text = {
-                Text("¿Quieres eliminar “${registro.tipoActividad}”? Esta acción no se puede deshacer.")
+                Text(
+                    "¿Quieres eliminar “${registro.tipoActividad}”? Dejará de verse y de contar " +
+                        "en tus resúmenes y gráficos."
+                )
             },
             confirmButton = {
                 TextButton(
@@ -133,6 +148,7 @@ fun PantallaDetalle(
 
             else -> ContenidoDetalle(
                 registro = registro,
+                versiones = versiones,
                 mensajeError = mensajeError,
                 alEditar = { alEditar(registro) },
                 alEliminar = { confirmarEliminar = true }
@@ -144,6 +160,7 @@ fun PantallaDetalle(
 @Composable
 private fun ContenidoDetalle(
     registro: RegistroActividad,
+    versiones: List<VersionRegistro>,
     mensajeError: String,
     alEditar: () -> Unit,
     alEliminar: () -> Unit
@@ -161,7 +178,10 @@ private fun ContenidoDetalle(
 
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                text = (ambito?.nombre ?: "Sin ámbito").uppercase(),
+                text = buildString {
+                    append((ambito?.nombre ?: "Sin ámbito").uppercase())
+                    if (registro.editado) append(" · EDITADO")
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -184,7 +204,7 @@ private fun ContenidoDetalle(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 FilaDato(Icons.Rounded.CalendarMonth, "Fecha", registro.fechaHora)
-                BarraIntensidad(intensidad = registro.intensidad)
+                BarrasEscala(registro)
                 FilaDato(Icons.Rounded.Place, "Contexto", registro.contexto)
                 FilasDetallesAmbito(registro)
             }
@@ -214,6 +234,10 @@ private fun ContenidoDetalle(
                     )
                 }
             }
+        }
+
+        if (versiones.isNotEmpty()) {
+            HistorialVersiones(versiones = versiones, esAnimo = ambito == Ambito.ANIMO)
         }
 
         if (mensajeError.isNotEmpty()) {
@@ -256,6 +280,79 @@ private fun ContenidoDetalle(
         }
     }
 }
+
+@Composable
+private fun HistorialVersiones(versiones: List<VersionRegistro>, esAnimo: Boolean) {
+    var expandido by rememberSaveable { mutableStateOf(false) }
+
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { expandido = !expandido }
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.History,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = if (versiones.size == 1) "1 versión anterior" else "${versiones.size} versiones anteriores",
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f)
+                )
+                Icon(
+                    imageVector = if (expandido) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                    contentDescription = if (expandido) "Ocultar versiones" else "Ver versiones"
+                )
+            }
+
+            AnimatedVisibility(visible = expandido) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    versiones.forEach { version ->
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text(
+                                text = "Hasta el ${formatearMomento(version.fechaGuardado)}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(version.tipoActividad, style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                text = buildString {
+                                    append(if (esAnimo) "Depresión " else "Intensidad ")
+                                    append(Escala.describir(version.intensidad))
+                                    version.elevacion?.let { append(" · Elevación ${Escala.describir(it)}") }
+                                    append(" · ${version.contexto}")
+                                    version.detalles?.let { append(" · $it") }
+                                    version.nota?.let { append(" · “$it”") }
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun formatearMomento(millis: Long): String =
+    SimpleDateFormat("dd/MM/yyyy 'a las' HH:mm", Locale.forLanguageTag("es-CL")).format(Date(millis))
 
 @Composable
 private fun EstadoDetalle(contenido: @Composable ColumnScope.() -> Unit) {

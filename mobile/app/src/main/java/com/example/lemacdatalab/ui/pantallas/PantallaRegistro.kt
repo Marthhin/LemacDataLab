@@ -18,7 +18,9 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -27,6 +29,7 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,7 +40,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.Slider
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -49,10 +54,16 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.CamposAmbito
+import com.example.lemacdatalab.model.Escala
+import com.example.lemacdatalab.model.OPCION_OTRO
 import com.example.lemacdatalab.model.etiquetaResultado
 import com.example.lemacdatalab.model.opcionesResultado
 import com.example.lemacdatalab.model.textosDe
@@ -60,10 +71,6 @@ import com.example.lemacdatalab.util.fechaAMillisUtc
 import com.example.lemacdatalab.util.fechaDeHoy
 import com.example.lemacdatalab.util.millisUtcAFecha
 import com.example.lemacdatalab.viewmodel.RegistroViewModel
-import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_INICIAL
-import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_MAXIMA
-import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_MINIMA
-import kotlin.math.roundToInt
 
 @Composable
 fun PantallaRegistro(
@@ -201,9 +208,8 @@ fun PantallaRegistro(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            SelectorIntensidad(
-                intensidad = viewModel.intensidad,
-                error = viewModel.errorIntensidad,
+            SelectorEscala(
+                valor = viewModel.intensidad,
                 alCambiar = viewModel::cambiarIntensidad
             )
         }
@@ -247,22 +253,65 @@ fun PantallaRegistro(
 private fun CamposDelAmbito(ambito: Ambito, viewModel: RegistroViewModel) {
     when (ambito) {
         Ambito.ANIMO -> {
-            EtiquetaCampo("¿Qué sentiste?")
+            EtiquetaCampo("Elevación")
+            Text(
+                text = "¿Qué tan acelerado o acelerada, eufórico o eufórica te sentiste?",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            SelectorEscala(
+                valor = viewModel.elevacion,
+                alCambiar = viewModel::cambiarElevacion
+            )
+
+            OutlinedTextField(
+                value = viewModel.horasSueno,
+                onValueChange = viewModel::cambiarHorasSueno,
+                label = { Text("Horas de sueño (opcional)") },
+                placeholder = { Text("Ej.: 7,5") },
+                suffix = { Text("h") },
+                isError = viewModel.errorHorasSueno != null,
+                supportingText = viewModel.errorHorasSueno?.let { { Text(it) } },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            EtiquetaCampo("¿Qué sentiste? (opcional)")
             SelectorOpciones(
                 opciones = CamposAmbito.EMOCIONES,
                 seleccionada = viewModel.emocion,
                 alElegir = viewModel::cambiarEmocion,
-                permitirQuitar = false
+                permitirQuitar = true
             )
-            TextoError(viewModel.errorEmocion)
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .toggleable(
+                        value = viewModel.altoRiesgo,
+                        role = Role.Checkbox,
+                        onValueChange = viewModel::cambiarAltoRiesgo
+                    )
+            ) {
+                Checkbox(checked = viewModel.altoRiesgo, onCheckedChange = null)
+                Text(
+                    text = "Me sentí en alto riesgo o tuve experiencias inusuales (oír o ver cosas que otros no)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(start = 12.dp)
+                )
+            }
         }
 
         Ambito.DBT -> {
             EtiquetaCampo("Habilidad practicada")
-            SelectorOpciones(
+            SelectorCatalogo(
                 opciones = CamposAmbito.HABILIDADES_DBT,
                 seleccionada = viewModel.habilidad,
+                otro = viewModel.habilidadOtra,
                 alElegir = viewModel::cambiarHabilidad,
+                alCambiarOtro = viewModel::cambiarHabilidadOtra,
                 permitirQuitar = false
             )
             TextoError(viewModel.errorHabilidad)
@@ -280,24 +329,28 @@ private fun CamposDelAmbito(ambito: Ambito, viewModel: RegistroViewModel) {
         }
 
         Ambito.ADICCIONES -> {
-            OutlinedTextField(
-                value = viewModel.desencadenante,
-                onValueChange = viewModel::cambiarDesencadenante,
-                label = { Text("Desencadenante (opcional)") },
-                placeholder = { Text("Ej.: estrés después del trabajo") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+            EtiquetaCampo("Desencadenante (opcional)")
+            SelectorCatalogo(
+                opciones = CamposAmbito.DESENCADENANTES,
+                seleccionada = viewModel.desencadenante,
+                otro = viewModel.desencadenanteOtro,
+                alElegir = viewModel::cambiarDesencadenante,
+                alCambiarOtro = viewModel::cambiarDesencadenanteOtro,
+                permitirQuitar = true
             )
-            OutlinedTextField(
-                value = viewModel.accionProtectora,
-                onValueChange = viewModel::cambiarAccionProtectora,
-                label = { Text("Acción protectora (opcional)") },
-                placeholder = { Text("Ej.: salí a caminar") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+            EtiquetaCampo("Acción protectora (opcional)")
+            SelectorCatalogo(
+                opciones = CamposAmbito.ACCIONES_PROTECTORAS,
+                seleccionada = viewModel.accionProtectora,
+                otro = viewModel.accionProtectoraOtra,
+                alElegir = viewModel::cambiarAccionProtectora,
+                alCambiarOtro = viewModel::cambiarAccionProtectoraOtra,
+                permitirQuitar = true
             )
         }
     }
+
+    TextoError(viewModel.errorOtro)
 
     val opciones = opcionesResultado(ambito)
     if (opciones.isNotEmpty()) {
@@ -307,6 +360,33 @@ private fun CamposDelAmbito(ambito: Ambito, viewModel: RegistroViewModel) {
             seleccionada = viewModel.resultado,
             alElegir = viewModel::cambiarResultado,
             permitirQuitar = true
+        )
+    }
+}
+
+@Composable
+private fun SelectorCatalogo(
+    opciones: List<String>,
+    seleccionada: String,
+    otro: String,
+    alElegir: (String) -> Unit,
+    alCambiarOtro: (String) -> Unit,
+    permitirQuitar: Boolean
+) {
+    SelectorOpciones(
+        opciones = opciones,
+        seleccionada = seleccionada,
+        alElegir = alElegir,
+        permitirQuitar = permitirQuitar
+    )
+
+    AnimatedVisibility(visible = seleccionada == OPCION_OTRO) {
+        OutlinedTextField(
+            value = otro,
+            onValueChange = alCambiarOtro,
+            label = { Text("Especifica") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }
@@ -390,37 +470,31 @@ private fun SelectorFecha(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun SelectorIntensidad(
-    intensidad: String,
-    error: String?,
-    alCambiar: (String) -> Unit
+private fun SelectorEscala(
+    valor: Int,
+    alCambiar: (Int) -> Unit
 ) {
-    val valor = intensidad.toIntOrNull()
-        ?.coerceIn(INTENSIDAD_MINIMA, INTENSIDAD_MAXIMA)
-        ?: INTENSIDAD_INICIAL
-
-    val descripcion = when (valor) {
-        in 1..3 -> "Baja"
-        in 4..7 -> "Media"
-        else -> "Alta"
-    }
-
     Row(verticalAlignment = Alignment.Bottom) {
         Text(
             text = valor.toString(),
             style = MaterialTheme.typography.displaySmall,
-            color = MaterialTheme.colorScheme.primary
+            color = if (valor >= Escala.CRITICO) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.primary
+            }
         )
         Text(
-            text = " / $INTENSIDAD_MAXIMA",
+            text = " / ${Escala.MAXIMO}",
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 6.dp)
         )
         Text(
-            text = descripcion.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
+            text = Escala.etiqueta(valor).uppercase(),
+            style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.End,
             modifier = Modifier
@@ -429,28 +503,37 @@ private fun SelectorIntensidad(
         )
     }
 
-    Slider(
-        value = valor.toFloat(),
-        onValueChange = { alCambiar(it.roundToInt().toString()) },
-        valueRange = INTENSIDAD_MINIMA.toFloat()..INTENSIDAD_MAXIMA.toFloat(),
-        steps = INTENSIDAD_MAXIMA - INTENSIDAD_MINIMA - 1
-    )
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        (Escala.MINIMO..Escala.MAXIMO).forEach { opcion ->
+            SegmentedButton(
+                selected = opcion == valor,
+                onClick = { alCambiar(opcion) },
+                shape = SegmentedButtonDefaults.itemShape(
+                    index = opcion - Escala.MINIMO,
+                    count = Escala.MAXIMO - Escala.MINIMO + 1
+                ),
+                icon = {},
+                label = { Text(opcion.toString()) },
+                modifier = Modifier.semantics {
+                    contentDescription = Escala.describir(opcion)
+                }
+            )
+        }
+    }
 
     Row(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "$INTENSIDAD_MINIMA · Baja",
+            text = "0 · ${Escala.etiqueta(Escala.MINIMO)}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f)
         )
         Text(
-            text = "Alta · $INTENSIDAD_MAXIMA",
+            text = "${Escala.etiqueta(Escala.MAXIMO)} · ${Escala.MAXIMO}",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
-
-    TextoError(error)
 }
 
 @Composable

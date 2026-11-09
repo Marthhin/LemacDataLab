@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.TrendingDown
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -18,37 +20,71 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_MAXIMA
+import com.example.lemacdatalab.model.Ambito
+import com.example.lemacdatalab.model.Escala
+import com.example.lemacdatalab.model.RegistroActividad
+import com.example.lemacdatalab.model.textosDe
 
 @Composable
-fun BarraIntensidad(intensidad: Int) {
+fun BarrasEscala(registro: RegistroActividad) {
+    val ambito = Ambito.desdeId(registro.idAmbito)
+
+    if (ambito == Ambito.ANIMO) {
+        BarraIntensidad(
+            intensidad = registro.intensidad,
+            etiqueta = "Depresión",
+            icono = Icons.AutoMirrored.Rounded.TrendingDown
+        )
+        BarraIntensidad(
+            intensidad = registro.elevacion ?: Escala.MINIMO,
+            etiqueta = "Elevación",
+            icono = Icons.AutoMirrored.Rounded.TrendingUp
+        )
+    } else {
+        BarraIntensidad(intensidad = registro.intensidad, etiqueta = textosDe(ambito).intensidad)
+    }
+}
+
+@Composable
+fun BarraIntensidad(
+    intensidad: Int,
+    etiqueta: String = "Intensidad",
+    icono: ImageVector = Icons.Rounded.Speed
+) {
+    val valor = intensidad.coerceIn(Escala.MINIMO, Escala.MAXIMO)
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = Icons.Rounded.Speed,
+                imageVector = icono,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = "Intensidad",
+                text = etiqueta,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f)
             )
             Text(
-                text = "$intensidad / $INTENSIDAD_MAXIMA",
+                text = "${Escala.describir(valor)} (de ${Escala.MAXIMO})",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold
             )
         }
 
         LinearProgressIndicator(
-            progress = { (intensidad.toFloat() / INTENSIDAD_MAXIMA).coerceIn(0f, 1f) },
-            color = MaterialTheme.colorScheme.tertiary,
+            progress = { valor.toFloat() / Escala.MAXIMO },
+            color = if (valor >= Escala.CRITICO) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.tertiary
+            },
             trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             strokeCap = StrokeCap.Round,
             modifier = Modifier

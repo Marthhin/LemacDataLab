@@ -51,5 +51,23 @@ data class RegistroActividad(
     val accionProtectora: String? = null,
 
     @ColumnInfo(name = "resultado")
-    val resultado: String? = null
+    val resultado: String? = null,
+
+    @ColumnInfo(name = "elevacion")
+    val elevacion: Int? = null,
+
+    @ColumnInfo(name = "horas_sueno")
+    val horasSueno: Double? = null,
+
+    @ColumnInfo(name = "alto_riesgo", defaultValue = "0")
+    val altoRiesgo: Boolean = false,
+
+    @ColumnInfo(name = "editado", defaultValue = "0")
+    val editado: Boolean = false,
+
+    @ColumnInfo(name = "eliminado", defaultValue = "0")
+    val eliminado: Boolean = false,
+
+    @ColumnInfo(name = "fecha_modificacion", defaultValue = "0")
+    val fechaModificacion: Long = 0
 )

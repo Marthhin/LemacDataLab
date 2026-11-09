@@ -133,7 +133,7 @@ private fun GraficoLinea(
         fun posicionX(indice: Int) =
             margenIzquierdo + ancho * indice / (puntos.size - 1)
 
-        listOf(INTENSIDAD_MINIMA, 5, INTENSIDAD_MAXIMA).forEach { valor ->
+        listOf(INTENSIDAD_MINIMA, (INTENSIDAD_MINIMA + INTENSIDAD_MAXIMA) / 2, INTENSIDAD_MAXIMA).forEach { valor ->
             val y = posicionY(valor.toFloat())
             drawLine(
                 color = colorGuia,

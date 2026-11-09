@@ -381,6 +381,7 @@ class MainActivity : ComponentActivity() {
 
                         PantallaDetalle(
                             registro = detalleViewModel.registro,
+                            versiones = detalleViewModel.versiones,
                             cargando = detalleViewModel.cargando,
                             eliminando = detalleViewModel.eliminando,
                             mensajeError = detalleViewModel.mensajeError,
