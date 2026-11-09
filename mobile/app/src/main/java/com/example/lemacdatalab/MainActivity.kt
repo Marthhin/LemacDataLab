@@ -3,11 +3,20 @@ package com.example.lemacdatalab
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -34,6 +43,44 @@ import com.example.lemacdatalab.viewmodel.InicioViewModel
 import com.example.lemacdatalab.viewmodel.LoginViewModel
 import com.example.lemacdatalab.viewmodel.RecursosViewModel
 import com.example.lemacdatalab.viewmodel.RegistroViewModel
+
+private const val DURACION_TRANSICION = 300
+
+private typealias Transiciones = AnimatedContentTransitionScope<NavBackStackEntry>
+
+private fun Transiciones.entrarAvanzando(): EnterTransition =
+    slideIntoContainer(SlideDirection.Start, tween(DURACION_TRANSICION)) +
+            fadeIn(tween(DURACION_TRANSICION))
+
+private fun Transiciones.salirAvanzando(): ExitTransition =
+    slideOutOfContainer(
+        SlideDirection.Start,
+        tween(DURACION_TRANSICION),
+        targetOffset = { it / 4 }
+    ) + fadeOut(tween(DURACION_TRANSICION))
+
+private fun Transiciones.entrarVolviendo(): EnterTransition =
+    slideIntoContainer(
+        SlideDirection.End,
+        tween(DURACION_TRANSICION),
+        initialOffset = { it / 4 }
+    ) + fadeIn(tween(DURACION_TRANSICION))
+
+private fun Transiciones.salirVolviendo(): ExitTransition =
+    slideOutOfContainer(SlideDirection.End, tween(DURACION_TRANSICION)) +
+            fadeOut(tween(DURACION_TRANSICION))
+
+private fun Transiciones.subirFormulario(): EnterTransition =
+    slideIntoContainer(SlideDirection.Up, tween(DURACION_TRANSICION)) +
+            fadeIn(tween(DURACION_TRANSICION))
+
+private fun Transiciones.bajarFormulario(): ExitTransition =
+    slideOutOfContainer(SlideDirection.Down, tween(DURACION_TRANSICION)) +
+            fadeOut(tween(DURACION_TRANSICION))
+
+private fun fundidoEntrada(): EnterTransition = fadeIn(tween(DURACION_TRANSICION))
+
+private fun fundidoSalida(): ExitTransition = fadeOut(tween(DURACION_TRANSICION))
 
 class MainActivity : ComponentActivity() {
 
@@ -105,6 +152,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         setContent {
@@ -116,9 +164,17 @@ class MainActivity : ComponentActivity() {
 
                 NavHost(
                     navController = navController,
-                    startDestination = destinoInicial
+                    startDestination = destinoInicial,
+                    enterTransition = { entrarAvanzando() },
+                    exitTransition = { salirAvanzando() },
+                    popEnterTransition = { entrarVolviendo() },
+                    popExitTransition = { salirVolviendo() }
                 ) {
-                    composable(Rutas.LOGIN) {
+                    composable(
+                        route = Rutas.LOGIN,
+                        enterTransition = { fundidoEntrada() },
+                        exitTransition = { fundidoSalida() }
+                    ) {
                         PantallaLogin(
                             viewModel = loginViewModel,
                             alEntrar = {
@@ -131,7 +187,23 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable(Rutas.INICIO) {
+                    composable(
+                        route = Rutas.INICIO,
+                        enterTransition = {
+                            if (initialState.destination.route == Rutas.LOGIN) {
+                                fundidoEntrada()
+                            } else {
+                                entrarAvanzando()
+                            }
+                        },
+                        exitTransition = {
+                            if (targetState.destination.route == Rutas.LOGIN) {
+                                fundidoSalida()
+                            } else {
+                                salirAvanzando()
+                            }
+                        }
+                    ) {
                         PantallaInicio(
                             viewModel = inicioViewModel,
                             alias = inicioViewModel.alias,
@@ -162,7 +234,12 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable(Rutas.REGISTRO) {
+                    composable(
+                        route = Rutas.REGISTRO,
+                        enterTransition = { subirFormulario() },
+                        popExitTransition = { bajarFormulario() },
+                        exitTransition = { fundidoSalida() }
+                    ) {
                         PantallaRegistro(
                             fechaHora = registroViewModel.fechaHora,
                             tipoActividad = registroViewModel.tipoActividad,
@@ -198,7 +275,10 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
-                    composable(Rutas.RESULTADO) {
+                    composable(
+                        route = Rutas.RESULTADO,
+                        enterTransition = { fundidoEntrada() }
+                    ) {
                         PantallaResultado(
                             registro = registroViewModel.registroActual,
                             editando = registroViewModel.editando,
