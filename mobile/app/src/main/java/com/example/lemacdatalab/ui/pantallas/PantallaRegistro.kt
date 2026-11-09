@@ -1,6 +1,6 @@
 package com.example.lemacdatalab.ui.pantallas
 
-import android.app.DatePickerDialog
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -27,74 +27,60 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.Ambito
-import com.example.lemacdatalab.util.formatearFecha
+import com.example.lemacdatalab.model.CamposAmbito
+import com.example.lemacdatalab.model.etiquetaResultado
+import com.example.lemacdatalab.model.opcionesResultado
+import com.example.lemacdatalab.model.textosDe
+import com.example.lemacdatalab.util.fechaAMillisUtc
+import com.example.lemacdatalab.util.fechaDeHoy
+import com.example.lemacdatalab.util.millisUtcAFecha
+import com.example.lemacdatalab.viewmodel.RegistroViewModel
 import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_INICIAL
 import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_MAXIMA
 import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_MINIMA
-import java.util.Calendar
 import kotlin.math.roundToInt
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PantallaRegistro(
-    fechaHora: String,
-    tipoActividad: String,
-    contexto: String,
-    intensidad: String,
-    nota: String,
-    ambito: String,
-    editando: Boolean,
-    errorFechaHora: String?,
-    errorTipoActividad: String?,
-    errorContexto: String?,
-    errorIntensidad: String?,
-    errorAmbito: String?,
-    mensajeResultado: String,
-    alCambiarFechaHora: (String) -> Unit,
-    alCambiarTipoActividad: (String) -> Unit,
-    alCambiarContexto: (String) -> Unit,
-    alCambiarIntensidad: (String) -> Unit,
-    alCambiarNota: (String) -> Unit,
-    alCambiarAmbito: (String) -> Unit,
+    viewModel: RegistroViewModel,
     alGuardar: () -> Unit,
     alCerrar: () -> Unit
 ) {
-    val contextoAndroid = LocalContext.current
+    var mostrarCalendario by rememberSaveable { mutableStateOf(false) }
+    val ambito = viewModel.ambitoSeleccionado
+    val textos = textosDe(ambito)
 
-    fun abrirCalendario() {
-        val calendario = Calendar.getInstance()
-        val partes = fechaHora.split("/").map { it.toIntOrNull() }
-
-        if (partes.size == 3 && partes.none { it == null } && partes[1] in 1..12) {
-            calendario.set(partes[2]!!, partes[1]!! - 1, partes[0]!!)
-        }
-
-        DatePickerDialog(
-            contextoAndroid,
-            { _, anio, mes, dia ->
-                alCambiarFechaHora(formatearFecha(dia, mes + 1, anio))
-            },
-            calendario.get(Calendar.YEAR),
-            calendario.get(Calendar.MONTH),
-            calendario.get(Calendar.DAY_OF_MONTH)
-        ).apply {
-            datePicker.maxDate = System.currentTimeMillis()
-        }.show()
+    if (mostrarCalendario) {
+        SelectorFecha(
+            fecha = viewModel.fechaHora,
+            alElegir = viewModel::cambiarFechaHora,
+            alCerrar = { mostrarCalendario = false }
+        )
     }
 
     Column(
@@ -114,56 +100,30 @@ fun PantallaRegistro(
                 Icon(Icons.Rounded.Close, contentDescription = "Cerrar sin guardar")
             }
             Text(
-                text = if (editando) "Editar registro" else "Nuevo registro",
+                text = if (viewModel.editando) "Editar registro" else "Nuevo registro",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
         }
 
         Text(
-            text = if (editando) {
+            text = if (viewModel.editando) {
                 "Modifica los datos de la actividad."
             } else {
-                "Registra una actividad de prueba."
+                "Registra cómo te fue, en pocos pasos."
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         SeccionRegistro(titulo = "Ámbito") {
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Ambito.entries.forEach { opcion ->
-                    val seleccionado = ambito == opcion.nombre
-
-                    FilterChip(
-                        selected = seleccionado,
-                        onClick = { alCambiarAmbito(opcion.nombre) },
-                        label = { Text(opcion.nombre) },
-                        leadingIcon = if (seleccionado) {
-                            {
-                                Icon(
-                                    imageVector = Icons.Rounded.Check,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        } else {
-                            null
-                        }
-                    )
-                }
-            }
-
-            if (errorAmbito != null) {
-                Text(
-                    text = errorAmbito,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
+            SelectorOpciones(
+                opciones = Ambito.entries.map { it.nombre },
+                seleccionada = viewModel.ambito,
+                alElegir = viewModel::cambiarAmbito,
+                permitirQuitar = false
+            )
+            TextoError(viewModel.errorAmbito)
         }
 
         SeccionRegistro(titulo = "Actividad") {
@@ -173,11 +133,11 @@ fun PantallaRegistro(
             )
 
             OutlinedButton(
-                onClick = { abrirCalendario() },
+                onClick = { mostrarCalendario = true },
                 shape = RoundedCornerShape(12.dp),
                 border = BorderStroke(
                     width = 1.dp,
-                    color = if (errorFechaHora != null) {
+                    color = if (viewModel.errorFechaHora != null) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.outline
@@ -193,67 +153,65 @@ fun PantallaRegistro(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = fechaHora.ifEmpty { "Selecciona una fecha" },
+                        text = when (viewModel.fechaHora) {
+                            "" -> "Selecciona una fecha"
+                            fechaDeHoy() -> "Hoy · ${viewModel.fechaHora}"
+                            else -> viewModel.fechaHora
+                        },
                         color = MaterialTheme.colorScheme.onSurface
                     )
-
-                    Icon(
-                        imageVector = Icons.Rounded.CalendarMonth,
-                        contentDescription = null
-                    )
+                    Icon(Icons.Rounded.CalendarMonth, contentDescription = null)
                 }
             }
-
-            if (errorFechaHora != null) {
-                Text(
-                    text = errorFechaHora,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
+            TextoError(viewModel.errorFechaHora)
 
             OutlinedTextField(
-                value = tipoActividad,
-                onValueChange = alCambiarTipoActividad,
-                label = { Text("Actividad realizada") },
-                placeholder = { Text("Ej.: caminata de prueba") },
-                isError = errorTipoActividad != null,
-                supportingText = {
-                    if (errorTipoActividad != null) {
-                        Text(errorTipoActividad)
-                    }
-                },
+                value = viewModel.tipoActividad,
+                onValueChange = viewModel::cambiarTipoActividad,
+                label = { Text(textos.actividad) },
+                placeholder = { Text(textos.ejemploActividad) },
+                isError = viewModel.errorTipoActividad != null,
+                supportingText = viewModel.errorTipoActividad?.let { { Text(it) } },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
-                value = contexto,
-                onValueChange = alCambiarContexto,
+                value = viewModel.contexto,
+                onValueChange = viewModel::cambiarContexto,
                 label = { Text("Contexto") },
                 placeholder = { Text("Ej.: después de clases") },
-                isError = errorContexto != null,
-                supportingText = {
-                    if (errorContexto != null) {
-                        Text(errorContexto)
-                    }
-                },
+                isError = viewModel.errorContexto != null,
+                supportingText = viewModel.errorContexto?.let { { Text(it) } },
                 modifier = Modifier.fillMaxWidth()
             )
         }
 
-        SeccionRegistro(titulo = "Intensidad") {
+        AnimatedVisibility(visible = ambito != null) {
+            if (ambito != null) {
+                SeccionRegistro(titulo = "Detalles de ${ambito.nombre.lowercase()}") {
+                    CamposDelAmbito(ambito = ambito, viewModel = viewModel)
+                }
+            }
+        }
+
+        SeccionRegistro(titulo = textos.intensidad) {
+            Text(
+                text = textos.ayudaIntensidad,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             SelectorIntensidad(
-                intensidad = intensidad,
-                error = errorIntensidad,
-                alCambiar = alCambiarIntensidad
+                intensidad = viewModel.intensidad,
+                error = viewModel.errorIntensidad,
+                alCambiar = viewModel::cambiarIntensidad
             )
         }
 
         SeccionRegistro(titulo = "Nota opcional") {
             OutlinedTextField(
-                value = nota,
-                onValueChange = alCambiarNota,
+                value = viewModel.nota,
+                onValueChange = viewModel::cambiarNota,
                 label = { Text("Nota") },
                 placeholder = { Text("Agrega un detalle si lo necesitas") },
                 minLines = 3,
@@ -263,24 +221,172 @@ fun PantallaRegistro(
 
         Button(
             onClick = alGuardar,
+            enabled = !viewModel.guardando,
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 56.dp)
         ) {
             Text(
-                text = if (editando) "Guardar cambios" else "Guardar registro",
+                text = if (viewModel.editando) "Guardar cambios" else "Guardar registro",
                 style = MaterialTheme.typography.titleMedium
             )
         }
 
-        if (mensajeResultado.isNotEmpty()) {
+        if (viewModel.mensajeResultado.isNotEmpty()) {
             Text(
-                text = mensajeResultado,
+                text = viewModel.mensajeResultado,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
+    }
+}
+
+@Composable
+private fun CamposDelAmbito(ambito: Ambito, viewModel: RegistroViewModel) {
+    when (ambito) {
+        Ambito.ANIMO -> {
+            EtiquetaCampo("¿Qué sentiste?")
+            SelectorOpciones(
+                opciones = CamposAmbito.EMOCIONES,
+                seleccionada = viewModel.emocion,
+                alElegir = viewModel::cambiarEmocion,
+                permitirQuitar = false
+            )
+            TextoError(viewModel.errorEmocion)
+        }
+
+        Ambito.DBT -> {
+            EtiquetaCampo("Habilidad practicada")
+            SelectorOpciones(
+                opciones = CamposAmbito.HABILIDADES_DBT,
+                seleccionada = viewModel.habilidad,
+                alElegir = viewModel::cambiarHabilidad,
+                permitirQuitar = false
+            )
+            TextoError(viewModel.errorHabilidad)
+        }
+
+        Ambito.NEURODESARROLLO -> {
+            OutlinedTextField(
+                value = viewModel.estrategia,
+                onValueChange = viewModel::cambiarEstrategia,
+                label = { Text("Estrategia utilizada (opcional)") },
+                placeholder = { Text("Ej.: usé un temporizador") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        Ambito.ADICCIONES -> {
+            OutlinedTextField(
+                value = viewModel.desencadenante,
+                onValueChange = viewModel::cambiarDesencadenante,
+                label = { Text("Desencadenante (opcional)") },
+                placeholder = { Text("Ej.: estrés después del trabajo") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = viewModel.accionProtectora,
+                onValueChange = viewModel::cambiarAccionProtectora,
+                label = { Text("Acción protectora (opcional)") },
+                placeholder = { Text("Ej.: salí a caminar") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+
+    val opciones = opcionesResultado(ambito)
+    if (opciones.isNotEmpty()) {
+        EtiquetaCampo("${etiquetaResultado(ambito)} (opcional)")
+        SelectorOpciones(
+            opciones = opciones,
+            seleccionada = viewModel.resultado,
+            alElegir = viewModel::cambiarResultado,
+            permitirQuitar = true
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SelectorOpciones(
+    opciones: List<String>,
+    seleccionada: String,
+    alElegir: (String) -> Unit,
+    permitirQuitar: Boolean
+) {
+    FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        opciones.forEach { opcion ->
+            val elegida = opcion == seleccionada
+            FilterChip(
+                selected = elegida,
+                onClick = {
+                    when {
+                        !elegida -> alElegir(opcion)
+                        permitirQuitar -> alElegir("")
+                    }
+                },
+                label = { Text(opcion) },
+                leadingIcon = if (elegida) {
+                    { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                } else {
+                    null
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SelectorFecha(
+    fecha: String,
+    alElegir: (String) -> Unit,
+    alCerrar: () -> Unit
+) {
+    val hoy = remember { fechaAMillisUtc(fechaDeHoy()) ?: Long.MAX_VALUE }
+    val estado = rememberDatePickerState(
+        initialSelectedDateMillis = fechaAMillisUtc(fecha) ?: hoy,
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean = utcTimeMillis <= hoy
+        }
+    )
+
+    DatePickerDialog(
+        onDismissRequest = alCerrar,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    estado.selectedDateMillis?.let { alElegir(millisUtcAFecha(it)) }
+                    alCerrar()
+                },
+                enabled = estado.selectedDateMillis != null
+            ) {
+                Text("Aceptar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = alCerrar) {
+                Text("Cancelar")
+            }
+        }
+    ) {
+        DatePicker(
+            state = estado,
+            title = {
+                Text(
+                    text = "Fecha del registro",
+                    modifier = Modifier.padding(start = 24.dp, top = 16.dp)
+                )
+            }
+        )
     }
 }
 
@@ -344,6 +450,19 @@ private fun SelectorIntensidad(
         )
     }
 
+    TextoError(error)
+}
+
+@Composable
+private fun EtiquetaCampo(texto: String) {
+    Text(
+        text = texto,
+        style = MaterialTheme.typography.labelLarge
+    )
+}
+
+@Composable
+private fun TextoError(error: String?) {
     if (error != null) {
         Text(
             text = error,

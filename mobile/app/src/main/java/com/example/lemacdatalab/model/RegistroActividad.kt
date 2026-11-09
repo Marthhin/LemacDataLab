@@ -33,5 +33,23 @@ data class RegistroActividad(
     val nota: String?,
 
     @ColumnInfo(name = "estado")
-    val estado: String
+    val estado: String,
+
+    @ColumnInfo(name = "emocion")
+    val emocion: String? = null,
+
+    @ColumnInfo(name = "habilidad")
+    val habilidad: String? = null,
+
+    @ColumnInfo(name = "estrategia")
+    val estrategia: String? = null,
+
+    @ColumnInfo(name = "desencadenante")
+    val desencadenante: String? = null,
+
+    @ColumnInfo(name = "accion_protectora")
+    val accionProtectora: String? = null,
+
+    @ColumnInfo(name = "resultado")
+    val resultado: String? = null
 )

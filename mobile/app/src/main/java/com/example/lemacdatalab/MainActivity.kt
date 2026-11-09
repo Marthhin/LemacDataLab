@@ -36,6 +36,8 @@ import com.example.lemacdatalab.datos.RepositorioUsuarios
 import com.example.lemacdatalab.datos.SesionUsuario
 import com.example.lemacdatalab.navigation.Rutas
 import com.example.lemacdatalab.notificaciones.ProgramadorRecordatorios
+import com.example.lemacdatalab.ui.pantallas.PantallaBienvenida
+import com.example.lemacdatalab.ui.pantallas.PantallaCuenta
 import com.example.lemacdatalab.ui.pantallas.PantallaDetalle
 import com.example.lemacdatalab.ui.pantallas.PantallaHistorial
 import com.example.lemacdatalab.ui.pantallas.PantallaInicio
@@ -45,6 +47,7 @@ import com.example.lemacdatalab.ui.pantallas.PantallaRecursos
 import com.example.lemacdatalab.ui.pantallas.PantallaRegistro
 import com.example.lemacdatalab.ui.pantallas.PantallaResultado
 import com.example.lemacdatalab.ui.theme.LemacDataLabTheme
+import com.example.lemacdatalab.viewmodel.CuentaViewModel
 import com.example.lemacdatalab.viewmodel.DetalleViewModel
 import com.example.lemacdatalab.viewmodel.HistorialViewModel
 import com.example.lemacdatalab.viewmodel.InicioViewModel
@@ -102,7 +105,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private val repositorioUsuarios by lazy {
-        RepositorioUsuarios(baseDatos.usuarioDao())
+        RepositorioUsuarios(baseDatos)
     }
 
     private val repositorioContenidos by lazy {
@@ -144,6 +147,9 @@ class MainActivity : ComponentActivity() {
             initializer {
                 RecordatoriosViewModel(preferencias, programador)
             }
+            initializer {
+                CuentaViewModel(repositorioUsuarios, repositorio, sesion)
+            }
         }
     }
 
@@ -175,6 +181,10 @@ class MainActivity : ComponentActivity() {
         ViewModelProvider(this, fabricaViewModels)[RecordatoriosViewModel::class.java]
     }
 
+    private val cuentaViewModel by lazy {
+        ViewModelProvider(this, fabricaViewModels)[CuentaViewModel::class.java]
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
@@ -194,7 +204,19 @@ class MainActivity : ComponentActivity() {
             LemacDataLabTheme(darkTheme = usarOscuro) {
                 val navController = rememberNavController()
                 val destinoInicial = remember {
-                    if (sesion.haySesion) Rutas.INICIO else Rutas.LOGIN
+                    when {
+                        sesion.haySesion -> Rutas.INICIO
+                        !preferencias.bienvenidaVista.value -> Rutas.BIENVENIDA
+                        else -> Rutas.LOGIN
+                    }
+                }
+
+                val irAlLogin: () -> Unit = {
+                    navController.navigate(Rutas.LOGIN) {
+                        popUpTo(navController.graph.id) {
+                            inclusive = true
+                        }
+                    }
                 }
 
                 NavHost(
@@ -205,6 +227,18 @@ class MainActivity : ComponentActivity() {
                     popEnterTransition = { entrarVolviendo() },
                     popExitTransition = { salirVolviendo() }
                 ) {
+                    composable(
+                        route = Rutas.BIENVENIDA,
+                        exitTransition = { fundidoSalida() }
+                    ) {
+                        PantallaBienvenida(
+                            alTerminar = {
+                                preferencias.marcarBienvenidaVista()
+                                irAlLogin()
+                            }
+                        )
+                    }
+
                     composable(
                         route = Rutas.LOGIN,
                         enterTransition = { fundidoEntrada() },
@@ -266,13 +300,8 @@ class MainActivity : ComponentActivity() {
                             alVerRecordatorios = {
                                 navController.navigate(Rutas.RECORDATORIOS)
                             },
-                            alCerrarSesion = {
-                                sesion.cerrar()
-                                navController.navigate(Rutas.LOGIN) {
-                                    popUpTo(navController.graph.id) {
-                                        inclusive = true
-                                    }
-                                }
+                            alVerCuenta = {
+                                navController.navigate(Rutas.CUENTA)
                             }
                         )
                     }
@@ -284,25 +313,7 @@ class MainActivity : ComponentActivity() {
                         exitTransition = { fundidoSalida() }
                     ) {
                         PantallaRegistro(
-                            fechaHora = registroViewModel.fechaHora,
-                            tipoActividad = registroViewModel.tipoActividad,
-                            contexto = registroViewModel.contexto,
-                            intensidad = registroViewModel.intensidad,
-                            nota = registroViewModel.nota,
-                            ambito = registroViewModel.ambito,
-                            editando = registroViewModel.editando,
-                            errorFechaHora = registroViewModel.errorFechaHora,
-                            errorTipoActividad = registroViewModel.errorTipoActividad,
-                            errorContexto = registroViewModel.errorContexto,
-                            errorIntensidad = registroViewModel.errorIntensidad,
-                            errorAmbito = registroViewModel.errorAmbito,
-                            mensajeResultado = registroViewModel.mensajeResultado,
-                            alCambiarFechaHora = registroViewModel::cambiarFechaHora,
-                            alCambiarTipoActividad = registroViewModel::cambiarTipoActividad,
-                            alCambiarContexto = registroViewModel::cambiarContexto,
-                            alCambiarIntensidad = registroViewModel::cambiarIntensidad,
-                            alCambiarNota = registroViewModel::cambiarNota,
-                            alCambiarAmbito = registroViewModel::cambiarAmbito,
+                            viewModel = registroViewModel,
                             alGuardar = {
                                 registroViewModel.guardarRegistro {
                                     navController.navigate(Rutas.RESULTADO) {
@@ -349,11 +360,14 @@ class MainActivity : ComponentActivity() {
                             registros = historialViewModel.registrosVisibles,
                             hayRegistros = historialViewModel.registros.isNotEmpty(),
                             filtro = historialViewModel.filtro,
+                            busqueda = historialViewModel.busqueda,
                             cargando = historialViewModel.cargando,
                             mensajeError = historialViewModel.mensajeError,
                             mensajeOperacion = historialViewModel.mensajeOperacion,
                             registroEliminado = historialViewModel.registroEliminado,
                             alCambiarFiltro = historialViewModel::cambiarFiltro,
+                            alCambiarBusqueda = historialViewModel::cambiarBusqueda,
+                            alLimpiarFiltros = historialViewModel::limpiarFiltros,
                             alVerDetalle = { id ->
                                 navController.navigate(Rutas.detalle(id))
                             },
@@ -422,6 +436,24 @@ class MainActivity : ComponentActivity() {
                             alCambiarHora = recordatoriosViewModel::cambiarHora,
                             alAlternarDia = recordatoriosViewModel::alternarDia,
                             alCambiarOmitir = recordatoriosViewModel::cambiarOmitir,
+                            alVolver = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
+                    composable(Rutas.CUENTA) {
+                        LaunchedEffect(Unit) {
+                            cuentaViewModel.reiniciarFormulario()
+                        }
+
+                        PantallaCuenta(
+                            viewModel = cuentaViewModel,
+                            alCerrarSesion = {
+                                sesion.cerrar()
+                                irAlLogin()
+                            },
+                            alCuentaEliminada = irAlLogin,
                             alVolver = {
                                 navController.popBackStack()
                             }

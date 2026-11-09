@@ -44,10 +44,18 @@ class HistorialViewModel(
     var filtro by mutableStateOf<Ambito?>(null)
         private set
 
+    var busqueda by mutableStateOf("")
+        private set
+
     val registrosVisibles: List<RegistroActividad>
-        get() = filtro?.let { ambito ->
-            registros.filter { it.idAmbito == ambito.id }
-        } ?: registros
+        get() {
+            val ambito = filtro
+            val texto = busqueda.trim()
+            return registros.filter { registro ->
+                (ambito == null || registro.idAmbito == ambito.id) &&
+                        (texto.isEmpty() || coincideConBusqueda(registro, texto))
+            }
+        }
 
     init {
         observarRegistros()
@@ -56,6 +64,27 @@ class HistorialViewModel(
     fun cambiarFiltro(ambito: Ambito?) {
         filtro = ambito
     }
+
+    fun cambiarBusqueda(texto: String) {
+        busqueda = texto
+    }
+
+    fun limpiarFiltros() {
+        filtro = null
+        busqueda = ""
+    }
+
+    private fun coincideConBusqueda(registro: RegistroActividad, texto: String): Boolean =
+        listOfNotNull(
+            registro.tipoActividad,
+            registro.contexto,
+            registro.nota,
+            registro.emocion,
+            registro.habilidad,
+            registro.estrategia,
+            registro.desencadenante,
+            registro.accionProtectora
+        ).any { it.contains(texto, ignoreCase = true) }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun observarRegistros() {

@@ -11,6 +11,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import com.example.lemacdatalab.MainActivity
+import com.example.lemacdatalab.R
 
 object NotificacionesRecordatorio {
 
@@ -19,6 +20,7 @@ object NotificacionesRecordatorio {
 
     private const val CANAL = "recordatorios"
     private const val ID_NOTIFICACION = 1
+    private val COLOR_MARCA = 0xFF123F41.toInt()
 
     fun mostrar(context: Context): Boolean {
         if (
@@ -63,7 +65,8 @@ object NotificacionesRecordatorio {
         )
 
         val notificacion = NotificationCompat.Builder(context, CANAL)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(R.drawable.ic_notificacion)
+            .setColor(COLOR_MARCA)
             .setContentTitle(TITULO)
             .setContentText(TEXTO)
             .setContentIntent(abrirApp)

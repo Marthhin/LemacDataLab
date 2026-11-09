@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
@@ -19,16 +20,21 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.FilterAltOff
 import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -46,6 +52,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.RegistroActividad
@@ -58,11 +66,14 @@ fun PantallaHistorial(
     registros: List<RegistroActividad>,
     hayRegistros: Boolean,
     filtro: Ambito?,
+    busqueda: String,
     cargando: Boolean,
     mensajeError: String,
     mensajeOperacion: String,
     registroEliminado: RegistroActividad?,
     alCambiarFiltro: (Ambito?) -> Unit,
+    alCambiarBusqueda: (String) -> Unit,
+    alLimpiarFiltros: () -> Unit,
     alVerDetalle: (Int) -> Unit,
     alEliminar: (RegistroActividad) -> Unit,
     alDeshacer: () -> Unit,
@@ -144,6 +155,11 @@ fun PantallaHistorial(
             }
 
             if (hayRegistros) {
+                CampoBusqueda(
+                    texto = busqueda,
+                    alCambiar = alCambiarBusqueda
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 FiltrosAmbito(filtro = filtro, alCambiarFiltro = alCambiarFiltro)
             }
 
@@ -183,16 +199,21 @@ fun PantallaHistorial(
 
                 registros.isEmpty() -> EstadoHistorial(modifier = Modifier.weight(1f)) {
                     Icon(
-                        imageVector = Icons.Rounded.FilterAltOff,
+                        imageVector = if (busqueda.isNotBlank()) Icons.Rounded.SearchOff else Icons.Rounded.FilterAltOff,
                         contentDescription = null,
                         modifier = Modifier.size(56.dp),
                         tint = MaterialTheme.colorScheme.outline
                     )
                     Text(
-                        text = "No hay registros de ${filtro?.nombre ?: "este ámbito"}",
-                        style = MaterialTheme.typography.titleMedium
+                        text = if (busqueda.isNotBlank()) {
+                            "Sin resultados para “${busqueda.trim()}”"
+                        } else {
+                            "No hay registros de ${filtro?.nombre ?: "este ámbito"}"
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center
                     )
-                    TextButton(onClick = { alCambiarFiltro(null) }) {
+                    TextButton(onClick = alLimpiarFiltros) {
                         Text("Ver todos")
                     }
                 }
@@ -214,6 +235,34 @@ fun PantallaHistorial(
                 .padding(16.dp)
         )
     }
+}
+
+@Composable
+private fun CampoBusqueda(
+    texto: String,
+    alCambiar: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = texto,
+        onValueChange = alCambiar,
+        placeholder = { Text("Buscar en tus registros") },
+        leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+        trailingIcon = if (texto.isNotEmpty()) {
+            {
+                IconButton(onClick = { alCambiar("") }) {
+                    Icon(Icons.Rounded.Close, contentDescription = "Borrar búsqueda")
+                }
+            }
+        } else {
+            null
+        },
+        singleLine = true,
+        shape = RoundedCornerShape(16.dp),
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+    )
 }
 
 @Composable

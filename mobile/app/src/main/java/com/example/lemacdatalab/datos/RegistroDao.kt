@@ -33,6 +33,9 @@ interface RegistroDao {
     @Query("SELECT COUNT(*) FROM registros WHERE id_usuario = :idUsuario AND fecha_hora = :fecha")
     suspend fun contarRegistrosDelDia(idUsuario: Int, fecha: String): Int
 
+    @Query("DELETE FROM registros WHERE id_usuario = :idUsuario")
+    suspend fun eliminarDeUsuario(idUsuario: Int): Int
+
     @Update
     suspend fun actualizar(registro: RegistroActividad): Int
 

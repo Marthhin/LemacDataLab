@@ -20,23 +20,19 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.LightMode
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.example.lemacdatalab.model.DestinoInicio
 import com.example.lemacdatalab.ui.componentes.TarjetaCartaAnimo
 import com.example.lemacdatalab.ui.componentes.TarjetaOpcion
 import com.example.lemacdatalab.ui.componentes.TarjetaPermisoNotificaciones
@@ -59,30 +55,9 @@ fun PantallaInicio(
     alVerRegistro: (Int) -> Unit,
     alVerRecursos: () -> Unit,
     alVerRecordatorios: () -> Unit,
-    alCerrarSesion: () -> Unit
+    alVerCuenta: () -> Unit
 ) {
-    var confirmarSalida by rememberSaveable { mutableStateOf(false) }
     val permiso = rememberPermisoNotificaciones()
-
-    if (confirmarSalida) {
-        AlertDialog(
-            onDismissRequest = { confirmarSalida = false },
-            icon = { Icon(Icons.AutoMirrored.Rounded.Logout, contentDescription = null) },
-            title = { Text("¿Cerrar sesión?") },
-            text = { Text("Tus registros quedan guardados en este dispositivo.") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        confirmarSalida = false
-                        alCerrarSesion()
-                    }
-                ) { Text("Cerrar sesión") }
-            },
-            dismissButton = {
-                TextButton(onClick = { confirmarSalida = false }) { Text("Cancelar") }
-            }
-        )
-    }
 
     Column(
         modifier = Modifier
@@ -109,7 +84,7 @@ fun PantallaInicio(
                 alPresionar = alCambiarTema
             )
 
-            IconButton(onClick = { confirmarSalida = true }) {
+            IconButton(onClick = alVerCuenta) {
                 Box(
                     modifier = Modifier
                         .size(36.dp)
@@ -118,6 +93,7 @@ fun PantallaInicio(
                 ) {
                     Text(
                         text = alias.take(1).uppercase().ifEmpty { "?" },
+                        modifier = Modifier.semantics { contentDescription = "Mi cuenta" },
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
@@ -203,10 +179,11 @@ fun PantallaInicio(
             TarjetaOpcion(
                 opcion = opcion,
                 alPresionar = {
-                    when (opcion.nombre) {
-                        "Ver historial" -> alVerHistorial()
-                        "Recursos de apoyo" -> alVerRecursos()
-                        "Recordatorios" -> alVerRecordatorios()
+                    when (opcion.destino) {
+                        DestinoInicio.REGISTRAR -> alRegistrar()
+                        DestinoInicio.HISTORIAL -> alVerHistorial()
+                        DestinoInicio.RECURSOS -> alVerRecursos()
+                        DestinoInicio.RECORDATORIOS -> alVerRecordatorios()
                     }
                 }
             )

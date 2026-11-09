@@ -17,42 +17,31 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.Spa
-import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.example.lemacdatalab.ui.componentes.CampoContrasena
 import com.example.lemacdatalab.viewmodel.LoginViewModel
 
 @Composable
@@ -154,7 +143,7 @@ fun PantallaLogin(
                     CampoContrasena(
                         valor = viewModel.confirmacion,
                         alCambiar = viewModel::cambiarConfirmacion,
-                        etiqueta = "Repite la contraseña",
+                        etiqueta = "Confirmación",
                         error = viewModel.errorConfirmacion,
                         esUltimo = true,
                         alConfirmar = enviar
@@ -221,41 +210,4 @@ fun PantallaLogin(
             )
         }
     }
-}
-
-@Composable
-private fun CampoContrasena(
-    valor: String,
-    alCambiar: (String) -> Unit,
-    etiqueta: String,
-    error: String?,
-    esUltimo: Boolean,
-    alConfirmar: () -> Unit
-) {
-    var visible by rememberSaveable { mutableStateOf(false) }
-
-    OutlinedTextField(
-        value = valor,
-        onValueChange = alCambiar,
-        label = { Text(etiqueta) },
-        leadingIcon = { Icon(Icons.Rounded.Lock, contentDescription = null) },
-        trailingIcon = {
-            IconButton(onClick = { visible = !visible }) {
-                Icon(
-                    imageVector = if (visible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                    contentDescription = if (visible) "Ocultar contraseña" else "Mostrar contraseña"
-                )
-            }
-        },
-        visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
-        isError = error != null,
-        supportingText = error?.let { { Text(it) } },
-        singleLine = true,
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Password,
-            imeAction = if (esUltimo) ImeAction.Done else ImeAction.Next
-        ),
-        keyboardActions = KeyboardActions(onDone = { alConfirmar() }),
-        modifier = Modifier.fillMaxWidth()
-    )
 }

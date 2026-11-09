@@ -21,6 +21,15 @@ class PreferenciasApp(context: Context) {
         MutableStateFlow(preferencias.getBoolean(CLAVE_PERMISO_PREGUNTADO, false))
     val permisoPreguntado: StateFlow<Boolean> = _permisoPreguntado.asStateFlow()
 
+    private val _bienvenidaVista =
+        MutableStateFlow(preferencias.getBoolean(CLAVE_BIENVENIDA_VISTA, false))
+    val bienvenidaVista: StateFlow<Boolean> = _bienvenidaVista.asStateFlow()
+
+    fun marcarBienvenidaVista() {
+        preferencias.edit().putBoolean(CLAVE_BIENVENIDA_VISTA, true).apply()
+        _bienvenidaVista.value = true
+    }
+
     fun cambiarModoOscuro(activo: Boolean) {
         preferencias.edit().putBoolean(CLAVE_MODO_OSCURO, activo).apply()
         _modoOscuro.value = activo
@@ -74,6 +83,7 @@ class PreferenciasApp(context: Context) {
         const val CLAVE_RECORDATORIO_DIAS = "recordatorio_dias"
         const val CLAVE_RECORDATORIO_OMITIR = "recordatorio_omitir"
         const val CLAVE_PERMISO_PREGUNTADO = "permiso_notificaciones_preguntado"
+        const val CLAVE_BIENVENIDA_VISTA = "bienvenida_vista"
         const val HORA_POR_DEFECTO = 20
     }
 }

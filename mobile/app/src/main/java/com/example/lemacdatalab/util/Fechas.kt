@@ -2,6 +2,7 @@ package com.example.lemacdatalab.util
 
 import java.util.Calendar
 import java.util.Locale
+import java.util.TimeZone
 import kotlin.math.roundToInt
 
 private val MESES = listOf(
@@ -28,6 +29,26 @@ fun fechaDeHoy(): String {
         hoy.get(Calendar.DAY_OF_MONTH),
         hoy.get(Calendar.MONTH) + 1,
         hoy.get(Calendar.YEAR)
+    )
+}
+
+fun fechaAMillisUtc(fecha: String): Long? {
+    val partes = fecha.split("/").map { it.toIntOrNull() }
+    if (partes.size != 3 || partes.any { it == null }) return null
+    val (dia, mes, anio) = partes.map { it!! }
+    if (mes !in 1..12 || dia !in 1..31) return null
+    return Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+        clear()
+        set(anio, mes - 1, dia)
+    }.timeInMillis
+}
+
+fun millisUtcAFecha(millis: Long): String {
+    val fecha = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = millis }
+    return formatearFecha(
+        fecha.get(Calendar.DAY_OF_MONTH),
+        fecha.get(Calendar.MONTH) + 1,
+        fecha.get(Calendar.YEAR)
     )
 }
 

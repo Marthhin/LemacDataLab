@@ -38,6 +38,24 @@ class RegistroViewModel(
     var ambito by mutableStateOf("")
         private set
 
+    var emocion by mutableStateOf("")
+        private set
+
+    var habilidad by mutableStateOf("")
+        private set
+
+    var estrategia by mutableStateOf("")
+        private set
+
+    var desencadenante by mutableStateOf("")
+        private set
+
+    var accionProtectora by mutableStateOf("")
+        private set
+
+    var resultado by mutableStateOf("")
+        private set
+
     var errorFechaHora by mutableStateOf<String?>(null)
         private set
 
@@ -51,6 +69,12 @@ class RegistroViewModel(
         private set
 
     var errorAmbito by mutableStateOf<String?>(null)
+        private set
+
+    var errorEmocion by mutableStateOf<String?>(null)
+        private set
+
+    var errorHabilidad by mutableStateOf<String?>(null)
         private set
 
     var mensajeResultado by mutableStateOf("")
@@ -67,6 +91,9 @@ class RegistroViewModel(
     val editando: Boolean
         get() = registroEnEdicion != null
 
+    val ambitoSeleccionado: Ambito?
+        get() = Ambito.entries.find { it.nombre == ambito }
+
     fun comenzarNuevoRegistro() {
         if (guardando) return
 
@@ -79,7 +106,7 @@ class RegistroViewModel(
         intensidad = INTENSIDAD_INICIAL.toString()
         nota = ""
         ambito = ""
-
+        limpiarCamposAmbito()
         limpiarErrores()
     }
 
@@ -95,8 +122,23 @@ class RegistroViewModel(
         intensidad = registro.intensidad.coerceIn(INTENSIDAD_MINIMA, INTENSIDAD_MAXIMA).toString()
         nota = registro.nota.orEmpty()
         ambito = Ambito.desdeId(registro.idAmbito)?.nombre.orEmpty()
+        emocion = registro.emocion.orEmpty()
+        habilidad = registro.habilidad.orEmpty()
+        estrategia = registro.estrategia.orEmpty()
+        desencadenante = registro.desencadenante.orEmpty()
+        accionProtectora = registro.accionProtectora.orEmpty()
+        resultado = registro.resultado.orEmpty()
 
         limpiarErrores()
+    }
+
+    private fun limpiarCamposAmbito() {
+        emocion = ""
+        habilidad = ""
+        estrategia = ""
+        desencadenante = ""
+        accionProtectora = ""
+        resultado = ""
     }
 
     private fun limpiarErrores() {
@@ -105,6 +147,8 @@ class RegistroViewModel(
         errorContexto = null
         errorIntensidad = null
         errorAmbito = null
+        errorEmocion = null
+        errorHabilidad = null
         mensajeResultado = ""
     }
 
@@ -133,11 +177,44 @@ class RegistroViewModel(
     }
 
     fun cambiarAmbito(valor: String) {
+        if (valor != ambito) {
+            resultado = ""
+        }
         ambito = valor
         errorAmbito = null
+        errorEmocion = null
+        errorHabilidad = null
+    }
+
+    fun cambiarEmocion(valor: String) {
+        emocion = valor
+        errorEmocion = null
+    }
+
+    fun cambiarHabilidad(valor: String) {
+        habilidad = valor
+        errorHabilidad = null
+    }
+
+    fun cambiarEstrategia(valor: String) {
+        estrategia = valor
+    }
+
+    fun cambiarDesencadenante(valor: String) {
+        desencadenante = valor
+    }
+
+    fun cambiarAccionProtectora(valor: String) {
+        accionProtectora = valor
+    }
+
+    fun cambiarResultado(valor: String) {
+        resultado = valor
     }
 
     private fun validarFormulario(): Boolean {
+        val seleccionado = ambitoSeleccionado
+
         errorFechaHora = when {
             fechaHora.isBlank() -> "Selecciona una fecha"
             esFechaFutura(fechaHora) -> "La fecha no puede ser posterior a hoy"
@@ -145,13 +222,19 @@ class RegistroViewModel(
         }
 
         errorTipoActividad =
-            if (tipoActividad.isBlank()) "La actividad es obligatoria" else null
+            if (tipoActividad.isBlank()) "Este campo es obligatorio" else null
 
         errorContexto =
             if (contexto.isBlank()) "Ingresa el contexto" else null
 
         errorAmbito =
-            if (Ambito.entries.none { it.nombre == ambito }) "Selecciona un ámbito" else null
+            if (seleccionado == null) "Selecciona un ámbito" else null
+
+        errorEmocion =
+            if (seleccionado == Ambito.ANIMO && emocion.isBlank()) "Elige cómo te sentiste" else null
+
+        errorHabilidad =
+            if (seleccionado == Ambito.DBT && habilidad.isBlank()) "Elige la habilidad que practicaste" else null
 
         val valorIntensidad = intensidad.toIntOrNull()
         errorIntensidad = when {
@@ -161,11 +244,15 @@ class RegistroViewModel(
             else -> null
         }
 
-        val esValido = errorFechaHora == null &&
-                errorTipoActividad == null &&
-                errorContexto == null &&
-                errorAmbito == null &&
-                errorIntensidad == null
+        val esValido = listOf(
+            errorFechaHora,
+            errorTipoActividad,
+            errorContexto,
+            errorAmbito,
+            errorEmocion,
+            errorHabilidad,
+            errorIntensidad
+        ).all { it == null }
 
         if (!esValido) {
             mensajeResultado = "Revisa los campos marcados"
@@ -177,7 +264,7 @@ class RegistroViewModel(
     fun guardarRegistro(alGuardarCorrectamente: () -> Unit) {
         if (guardando || !validarFormulario()) return
 
-        val ambitoSeleccionado = Ambito.entries.first { it.nombre == ambito }
+        val ambitoElegido = ambitoSeleccionado ?: return
         val original = registroEnEdicion
 
         val idUsuario = original?.idUsuario ?: sesion.actual.value?.idUsuario
@@ -189,21 +276,23 @@ class RegistroViewModel(
         val registro = RegistroActividad(
             idRegistro = original?.idRegistro ?: 0,
             idUsuario = idUsuario,
-            idAmbito = ambitoSeleccionado.id,
+            idAmbito = ambitoElegido.id,
             fechaHora = fechaHora,
             tipoActividad = tipoActividad.trim(),
             intensidad = intensidad.toInt(),
             contexto = contexto.trim(),
-            nota = nota.trim().ifEmpty { null },
-            estado = original?.estado ?: "Prueba"
+            nota = nota.oNulo(),
+            estado = original?.estado ?: "Prueba",
+            emocion = emocion.oNulo().takeIf { ambitoElegido == Ambito.ANIMO },
+            habilidad = habilidad.oNulo().takeIf { ambitoElegido == Ambito.DBT },
+            estrategia = estrategia.oNulo().takeIf { ambitoElegido == Ambito.NEURODESARROLLO },
+            desencadenante = desencadenante.oNulo().takeIf { ambitoElegido == Ambito.ADICCIONES },
+            accionProtectora = accionProtectora.oNulo().takeIf { ambitoElegido == Ambito.ADICCIONES },
+            resultado = resultado.oNulo().takeIf { ambitoElegido != Ambito.ANIMO }
         )
 
         guardando = true
-        mensajeResultado = if (original == null) {
-            "Guardando registro..."
-        } else {
-            "Actualizando registro..."
-        }
+        mensajeResultado = if (original == null) "Guardando registro..." else "Actualizando registro..."
 
         viewModelScope.launch {
             try {
@@ -239,6 +328,8 @@ class RegistroViewModel(
             alGuardarCorrectamente()
         }
     }
+
+    private fun String.oNulo(): String? = trim().ifEmpty { null }
 
     companion object {
         const val INTENSIDAD_MINIMA = 1

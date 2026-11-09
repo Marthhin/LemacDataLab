@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.datos.SesionUsuario
+import com.example.lemacdatalab.model.DestinoInicio
 import com.example.lemacdatalab.model.OpcionInicio
 import com.example.lemacdatalab.model.PuntoGrafico
 import com.example.lemacdatalab.model.RegistroActividad
@@ -33,6 +34,7 @@ class InicioViewModel(
 ) : ViewModel() {
 
     val principal = OpcionInicio(
+        destino = DestinoInicio.REGISTRAR,
         nombre = "Registrar actividad",
         descripcion = "¿Qué hiciste hoy por ti?",
         icono = Icons.Rounded.AddCircle
@@ -40,16 +42,19 @@ class InicioViewModel(
 
     val secundarias = listOf(
         OpcionInicio(
+            destino = DestinoInicio.HISTORIAL,
             nombre = "Ver historial",
             descripcion = "Revisa tus registros anteriores",
             icono = Icons.Rounded.History
         ),
         OpcionInicio(
+            destino = DestinoInicio.RECURSOS,
             nombre = "Recursos de apoyo",
             descripcion = "Ejercicios y lecturas breves",
             icono = Icons.Rounded.Spa
         ),
         OpcionInicio(
+            destino = DestinoInicio.RECORDATORIOS,
             nombre = "Recordatorios",
             descripcion = "Programa un aviso diario",
             icono = Icons.Rounded.NotificationsActive

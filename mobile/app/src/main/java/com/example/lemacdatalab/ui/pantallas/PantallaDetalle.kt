@@ -51,6 +51,7 @@ import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.RegistroActividad
 import com.example.lemacdatalab.ui.componentes.BarraIntensidad
 import com.example.lemacdatalab.ui.componentes.FilaDato
+import com.example.lemacdatalab.ui.componentes.FilasDetallesAmbito
 import com.example.lemacdatalab.ui.componentes.IconoAmbito
 
 @Composable
@@ -185,6 +186,7 @@ private fun ContenidoDetalle(
                 FilaDato(Icons.Rounded.CalendarMonth, "Fecha", registro.fechaHora)
                 BarraIntensidad(intensidad = registro.intensidad)
                 FilaDato(Icons.Rounded.Place, "Contexto", registro.contexto)
+                FilasDetallesAmbito(registro)
             }
         }
 

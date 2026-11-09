@@ -11,7 +11,7 @@ import com.example.lemacdatalab.model.Usuario
 
 @Database(
     entities = [RegistroActividad::class, Usuario::class],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class BaseDatosRoom : RoomDatabase() {
@@ -94,6 +94,21 @@ abstract class BaseDatosRoom : RoomDatabase() {
             }
         }
 
+        private val MIGRACION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                listOf(
+                    "emocion",
+                    "habilidad",
+                    "estrategia",
+                    "desencadenante",
+                    "accion_protectora",
+                    "resultado"
+                ).forEach { columna ->
+                    db.execSQL("ALTER TABLE registros ADD COLUMN $columna TEXT")
+                }
+            }
+        }
+
         fun obtenerInstancia(context: Context): BaseDatosRoom {
             return instancia ?: synchronized(this) {
                 instancia ?: Room.databaseBuilder(
@@ -101,7 +116,7 @@ abstract class BaseDatosRoom : RoomDatabase() {
                     BaseDatosRoom::class.java,
                     "lemac_registros.db"
                 )
-                    .addMigrations(MIGRACION_1_2, MIGRACION_2_3)
+                    .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4)
                     .build()
                     .also { instancia = it }
             }
