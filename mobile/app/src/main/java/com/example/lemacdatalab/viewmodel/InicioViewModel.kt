@@ -51,7 +51,7 @@ class InicioViewModel(
         ),
         OpcionInicio(
             nombre = "Recordatorios",
-            descripcion = "Prueba un aviso en tu dispositivo",
+            descripcion = "Programa un aviso diario",
             icono = Icons.Rounded.NotificationsActive
         )
     )

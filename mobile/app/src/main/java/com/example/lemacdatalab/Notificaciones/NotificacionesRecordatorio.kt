@@ -14,6 +14,9 @@ import com.example.lemacdatalab.MainActivity
 
 object NotificacionesRecordatorio {
 
+    const val TITULO = "Un momento para ti"
+    const val TEXTO = "¿Registramos cómo va tu día?"
+
     private const val CANAL = "recordatorios"
     private const val ID_NOTIFICACION = 1
 
@@ -28,9 +31,7 @@ object NotificacionesRecordatorio {
             return false
         }
 
-        val administrador = context.getSystemService(
-            NotificationManager::class.java
-        )
+        val administrador = context.getSystemService(NotificationManager::class.java)
 
         if (!administrador.areNotificationsEnabled()) {
             return false
@@ -47,8 +48,7 @@ object NotificacionesRecordatorio {
 
             administrador.createNotificationChannel(canal)
 
-            if (
-                administrador.getNotificationChannel(CANAL)?.importance ==
+            if (administrador.getNotificationChannel(CANAL)?.importance ==
                 NotificationManager.IMPORTANCE_NONE
             ) {
                 return false
@@ -64,8 +64,8 @@ object NotificacionesRecordatorio {
 
         val notificacion = NotificationCompat.Builder(context, CANAL)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setContentTitle("Recordatorio")
-            .setContentText("Tienes un recordatorio pendiente.")
+            .setContentTitle(TITULO)
+            .setContentText(TEXTO)
             .setContentIntent(abrirApp)
             .setAutoCancel(true)
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)

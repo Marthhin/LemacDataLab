@@ -35,6 +35,7 @@ import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.datos.RepositorioUsuarios
 import com.example.lemacdatalab.datos.SesionUsuario
 import com.example.lemacdatalab.navigation.Rutas
+import com.example.lemacdatalab.notificaciones.ProgramadorRecordatorios
 import com.example.lemacdatalab.ui.pantallas.PantallaDetalle
 import com.example.lemacdatalab.ui.pantallas.PantallaHistorial
 import com.example.lemacdatalab.ui.pantallas.PantallaInicio
@@ -48,6 +49,7 @@ import com.example.lemacdatalab.viewmodel.DetalleViewModel
 import com.example.lemacdatalab.viewmodel.HistorialViewModel
 import com.example.lemacdatalab.viewmodel.InicioViewModel
 import com.example.lemacdatalab.viewmodel.LoginViewModel
+import com.example.lemacdatalab.viewmodel.RecordatoriosViewModel
 import com.example.lemacdatalab.viewmodel.RecursosViewModel
 import com.example.lemacdatalab.viewmodel.RegistroViewModel
 
@@ -115,6 +117,10 @@ class MainActivity : ComponentActivity() {
         PreferenciasApp(applicationContext)
     }
 
+    private val programador by lazy {
+        ProgramadorRecordatorios(applicationContext)
+    }
+
     private val fabricaViewModels by lazy {
         viewModelFactory {
             initializer {
@@ -134,6 +140,9 @@ class MainActivity : ComponentActivity() {
             }
             initializer {
                 RecursosViewModel(repositorioContenidos)
+            }
+            initializer {
+                RecordatoriosViewModel(preferencias, programador)
             }
         }
     }
@@ -162,9 +171,18 @@ class MainActivity : ComponentActivity() {
         ViewModelProvider(this, fabricaViewModels)[RecursosViewModel::class.java]
     }
 
+    private val recordatoriosViewModel by lazy {
+        ViewModelProvider(this, fabricaViewModels)[RecordatoriosViewModel::class.java]
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+        val recordatorio = preferencias.recordatorio.value
+        if (recordatorio.activo) {
+            programador.programar(recordatorio.hora, recordatorio.minuto)
+        }
 
         setContent {
             val modoOscuroGuardado by preferencias.modoOscuro.collectAsState()
@@ -394,7 +412,13 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable(Rutas.RECORDATORIOS) {
+                        val config by recordatoriosViewModel.config.collectAsState()
+
                         PantallaRecordatorios(
+                            config = config,
+                            alActivar = recordatoriosViewModel::activar,
+                            alDesactivar = recordatoriosViewModel::desactivar,
+                            alCambiarHora = recordatoriosViewModel::cambiarHora,
                             alVolver = {
                                 navController.popBackStack()
                             }
