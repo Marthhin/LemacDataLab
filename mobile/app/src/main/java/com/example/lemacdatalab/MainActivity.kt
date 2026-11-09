@@ -34,7 +34,6 @@ import com.example.lemacdatalab.datos.RepositorioContenidos
 import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.datos.RepositorioUsuarios
 import com.example.lemacdatalab.datos.SesionUsuario
-import com.example.lemacdatalab.model.ModoTema
 import com.example.lemacdatalab.navigation.Rutas
 import com.example.lemacdatalab.ui.pantallas.PantallaDetalle
 import com.example.lemacdatalab.ui.pantallas.PantallaHistorial
@@ -168,12 +167,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            val modoTema by preferencias.modoTema.collectAsState()
-            val usarOscuro = when (modoTema) {
-                ModoTema.SISTEMA -> isSystemInDarkTheme()
-                ModoTema.CLARO -> false
-                ModoTema.OSCURO -> true
-            }
+            val modoOscuroGuardado by preferencias.modoOscuro.collectAsState()
+            val usarOscuro = modoOscuroGuardado ?: isSystemInDarkTheme()
 
             DisposableEffect(usarOscuro) {
                 val estilo = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { usarOscuro }
@@ -232,8 +227,10 @@ class MainActivity : ComponentActivity() {
                         PantallaInicio(
                             viewModel = inicioViewModel,
                             alias = inicioViewModel.alias,
-                            modoTema = modoTema,
-                            alCambiarModoTema = preferencias::cambiarModoTema,
+                            modoOscuro = usarOscuro,
+                            alCambiarTema = {
+                                preferencias.cambiarModoOscuro(!usarOscuro)
+                            },
                             alRegistrar = {
                                 registroViewModel.comenzarNuevoRegistro()
                                 navController.navigate(Rutas.REGISTRO)

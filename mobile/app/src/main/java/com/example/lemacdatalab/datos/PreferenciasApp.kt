@@ -1,7 +1,6 @@
 package com.example.lemacdatalab.datos
 
 import android.content.Context
-import com.example.lemacdatalab.model.ModoTema
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,21 +10,21 @@ class PreferenciasApp(context: Context) {
     private val preferencias =
         context.getSharedPreferences("preferencias_lemac", Context.MODE_PRIVATE)
 
-    private val _modoTema = MutableStateFlow(leerModoTema())
+    private val _modoOscuro = MutableStateFlow(leerModoOscuro())
 
-    val modoTema: StateFlow<ModoTema> = _modoTema.asStateFlow()
+    val modoOscuro: StateFlow<Boolean?> = _modoOscuro.asStateFlow()
 
-    fun cambiarModoTema(modo: ModoTema) {
-        preferencias.edit().putString(CLAVE_MODO_TEMA, modo.name).apply()
-        _modoTema.value = modo
+    fun cambiarModoOscuro(activo: Boolean) {
+        preferencias.edit().putBoolean(CLAVE_MODO_OSCURO, activo).apply()
+        _modoOscuro.value = activo
     }
 
-    private fun leerModoTema(): ModoTema {
-        val guardado = preferencias.getString(CLAVE_MODO_TEMA, null)
-        return ModoTema.entries.find { it.name == guardado } ?: ModoTema.SISTEMA
+    private fun leerModoOscuro(): Boolean? {
+        if (!preferencias.contains(CLAVE_MODO_OSCURO)) return null
+        return preferencias.getBoolean(CLAVE_MODO_OSCURO, false)
     }
 
     private companion object {
-        const val CLAVE_MODO_TEMA = "modo_tema"
+        const val CLAVE_MODO_OSCURO = "modo_oscuro"
     }
 }
