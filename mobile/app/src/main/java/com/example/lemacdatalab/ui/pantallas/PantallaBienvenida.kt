@@ -71,7 +71,7 @@ private val PAGINAS = listOf(
         etiqueta = "IMPORTANTE",
         titulo = "Acompaña,",
         tituloCursiva = "no reemplaza.",
-        texto = "Es un proyecto académico con datos ficticios: no entrega diagnósticos ni es un servicio de urgencia. Si necesitas ayuda urgente en Chile: SAMU 131 · Línea de prevención del suicidio *4141."
+        texto = "No entrega diagnósticos ni es un servicio de urgencia. Si necesitas ayuda urgente en Chile: SAMU 131 · Línea de prevención del suicidio *4141."
     )
 )
 

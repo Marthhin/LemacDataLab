@@ -99,7 +99,7 @@ fun PantallaLogin(
 
         Text(
             text = if (viewModel.creandoCuenta) {
-                "Crea una cuenta de prueba para guardar tus registros."
+                "Crea una cuenta para guardar tus registros."
             } else {
                 "Ingresa para continuar con tus registros."
             },
@@ -203,7 +203,7 @@ fun PantallaLogin(
                 modifier = Modifier.size(16.dp)
             )
             Text(
-                text = "Proyecto académico con datos ficticios. El registro no reemplaza la atención profesional.",
+                text = "El registro acompaña tu cuidado, pero no reemplaza la atención profesional.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 8.dp)

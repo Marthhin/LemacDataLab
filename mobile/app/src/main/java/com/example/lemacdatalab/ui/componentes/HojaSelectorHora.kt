@@ -5,8 +5,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bedtime
 import androidx.compose.material.icons.rounded.LocalCafe
@@ -80,10 +83,12 @@ fun HojaSelectorHora(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .navigationBarsPadding()
+                .imePadding()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
-                .padding(bottom = 24.dp)
-                .imePadding(),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
@@ -103,17 +108,19 @@ fun HojaSelectorHora(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            SUGERENCIAS.chunked(2).forEach { fila ->
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    fila.forEach { sugerencia ->
-                        TarjetaSugerencia(
-                            sugerencia = sugerencia,
-                            seleccionada = sugerencia.hora == hora && sugerencia.minuto == minuto,
-                            alPresionar = {
-                                cerrarYLuego { alConfirmar(sugerencia.hora, sugerencia.minuto) }
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SUGERENCIAS.chunked(2).forEach { fila ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        fila.forEach { sugerencia ->
+                            TarjetaSugerencia(
+                                sugerencia = sugerencia,
+                                seleccionada = sugerencia.hora == hora && sugerencia.minuto == minuto,
+                                alPresionar = {
+                                    cerrarYLuego { alConfirmar(sugerencia.hora, sugerencia.minuto) }
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
             }
@@ -130,7 +137,7 @@ fun HojaSelectorHora(
             )
 
             Row(
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 TextButton(onClick = { cerrarYLuego { } }) {
@@ -162,7 +169,7 @@ private fun TarjetaSugerencia(
             containerColor = if (seleccionada) {
                 MaterialTheme.colorScheme.primaryContainer
             } else {
-                MaterialTheme.colorScheme.surfaceContainerLow
+                MaterialTheme.colorScheme.surfaceContainerHighest
             },
             contentColor = if (seleccionada) {
                 MaterialTheme.colorScheme.onPrimaryContainer
@@ -172,19 +179,21 @@ private fun TarjetaSugerencia(
         ),
         modifier = modifier
     ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)
         ) {
             Icon(imageVector = sugerencia.icono, contentDescription = null)
-            Text(
-                text = sugerencia.nombre,
-                style = MaterialTheme.typography.titleSmall
-            )
-            Text(
-                text = sugerencia.horaTexto,
-                style = MaterialTheme.typography.bodySmall
-            )
+            Column(modifier = Modifier.padding(start = 12.dp)) {
+                Text(
+                    text = sugerencia.nombre,
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Text(
+                    text = sugerencia.horaTexto,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
         }
     }
 }

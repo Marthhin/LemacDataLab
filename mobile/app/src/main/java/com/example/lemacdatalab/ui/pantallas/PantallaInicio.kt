@@ -188,14 +188,6 @@ fun PantallaInicio(
                 }
             )
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Proyecto académico · Usa datos ficticios",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 

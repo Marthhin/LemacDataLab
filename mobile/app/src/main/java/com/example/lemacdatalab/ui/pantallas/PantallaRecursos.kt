@@ -126,7 +126,7 @@ private fun AvisoRecursos() {
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    text = "Contenido educativo de prueba. No reemplaza la atención profesional ni es un servicio de urgencia.",
+                    text = "Estos contenidos son educativos y no reemplazan la atención profesional ni un servicio de urgencia.",
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(

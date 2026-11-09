@@ -26,7 +26,7 @@ data class TextosAmbito(
 
 private val TEXTOS_GENERALES = TextosAmbito(
     actividad = "Actividad realizada",
-    ejemploActividad = "Ej.: caminata de prueba",
+    ejemploActividad = "Ej.: caminata de 20 minutos",
     intensidad = "Intensidad",
     ayudaIntensidad = "Elige un ámbito para ver más detalles."
 )
