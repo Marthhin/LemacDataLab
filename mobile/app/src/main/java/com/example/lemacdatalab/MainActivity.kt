@@ -228,10 +228,16 @@ class MainActivity : ComponentActivity() {
                             filtro = historialViewModel.filtro,
                             cargando = historialViewModel.cargando,
                             mensajeError = historialViewModel.mensajeError,
+                            mensajeOperacion = historialViewModel.mensajeOperacion,
+                            registroEliminado = historialViewModel.registroEliminado,
                             alCambiarFiltro = historialViewModel::cambiarFiltro,
                             alVerDetalle = { id ->
                                 navController.navigate(Rutas.detalle(id))
                             },
+                            alEliminar = historialViewModel::eliminarRegistro,
+                            alDeshacer = historialViewModel::deshacerEliminacion,
+                            alDescartar = historialViewModel::descartarEliminacion,
+                            alLimpiarMensaje = historialViewModel::limpiarMensaje,
                             alVolver = {
                                 navController.popBackStack()
                             }

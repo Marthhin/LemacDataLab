@@ -38,6 +38,9 @@ class HistorialViewModel(
     var mensajeOperacion by mutableStateOf("")
         private set
 
+    var registroEliminado by mutableStateOf<RegistroActividad?>(null)
+        private set
+
     var filtro by mutableStateOf<Ambito?>(null)
         private set
 
@@ -61,6 +64,7 @@ class HistorialViewModel(
                 .onEach {
                     cargando = true
                     mensajeOperacion = ""
+                    registroEliminado = null
                 }
                 .flatMapLatest { datos ->
                     if (datos == null) {
@@ -86,16 +90,15 @@ class HistorialViewModel(
         if (eliminando) return
 
         eliminando = true
-        mensajeOperacion = "Eliminando registro..."
 
         viewModelScope.launch {
             try {
                 val filasEliminadas = repositorio.eliminar(registro)
 
-                mensajeOperacion = if (filasEliminadas == 1) {
-                    "Registro eliminado correctamente."
+                if (filasEliminadas == 1) {
+                    registroEliminado = registro
                 } else {
-                    "El registro ya no se encuentra en la base de datos."
+                    mensajeOperacion = "El registro ya no se encuentra en la base de datos."
                 }
             } catch (error: CancellationException) {
                 throw error
@@ -106,5 +109,29 @@ class HistorialViewModel(
                 eliminando = false
             }
         }
+    }
+
+    fun deshacerEliminacion() {
+        val registro = registroEliminado ?: return
+        registroEliminado = null
+
+        viewModelScope.launch {
+            try {
+                repositorio.insertar(registro)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                Log.e("HistorialViewModel", "Error al restaurar el registro", error)
+                mensajeOperacion = "No se pudo restaurar el registro."
+            }
+        }
+    }
+
+    fun descartarEliminacion() {
+        registroEliminado = null
+    }
+
+    fun limpiarMensaje() {
+        mensajeOperacion = ""
     }
 }
