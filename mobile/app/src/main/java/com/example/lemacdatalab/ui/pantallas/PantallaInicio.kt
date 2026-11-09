@@ -19,7 +19,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material.icons.rounded.BrightnessAuto
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -28,11 +34,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.example.lemacdatalab.model.ModoTema
 import com.example.lemacdatalab.ui.componentes.TarjetaCartaAnimo
 import com.example.lemacdatalab.ui.componentes.TarjetaOpcion
 import com.example.lemacdatalab.ui.componentes.TarjetaPrincipal
@@ -44,6 +53,8 @@ import com.example.lemacdatalab.viewmodel.InicioViewModel
 fun PantallaInicio(
     viewModel: InicioViewModel,
     alias: String,
+    modoTema: ModoTema,
+    alCambiarModoTema: (ModoTema) -> Unit,
     alRegistrar: () -> Unit,
     alVerHistorial: () -> Unit,
     alVerRegistro: (Int) -> Unit,
@@ -91,6 +102,11 @@ fun PantallaInicio(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.weight(1f)
+            )
+
+            SelectorTema(
+                modoTema = modoTema,
+                alCambiar = alCambiarModoTema
             )
 
             IconButton(onClick = { confirmarSalida = true }) {
@@ -192,6 +208,51 @@ fun PantallaInicio(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
+}
+
+@Composable
+private fun SelectorTema(
+    modoTema: ModoTema,
+    alCambiar: (ModoTema) -> Unit
+) {
+    var menuAbierto by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { menuAbierto = true }) {
+            Icon(
+                imageVector = iconoTema(modoTema),
+                contentDescription = "Cambiar tema: ${modoTema.etiqueta}",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        DropdownMenu(
+            expanded = menuAbierto,
+            onDismissRequest = { menuAbierto = false }
+        ) {
+            ModoTema.entries.forEach { opcion ->
+                DropdownMenuItem(
+                    text = { Text(opcion.etiqueta) },
+                    leadingIcon = { Icon(iconoTema(opcion), contentDescription = null) },
+                    trailingIcon = if (opcion == modoTema) {
+                        { Icon(Icons.Rounded.Check, contentDescription = "Seleccionado") }
+                    } else {
+                        null
+                    },
+                    onClick = {
+                        alCambiar(opcion)
+                        menuAbierto = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+private fun iconoTema(modo: ModoTema): ImageVector = when (modo) {
+    ModoTema.SISTEMA -> Icons.Rounded.BrightnessAuto
+    ModoTema.CLARO -> Icons.Rounded.LightMode
+    ModoTema.OSCURO -> Icons.Rounded.DarkMode
 }
 
 @Composable

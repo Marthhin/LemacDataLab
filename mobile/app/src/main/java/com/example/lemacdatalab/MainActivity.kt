@@ -1,7 +1,9 @@
 package com.example.lemacdatalab
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -11,7 +13,11 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
@@ -23,10 +29,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.lemacdatalab.datos.BaseDatosRoom
+import com.example.lemacdatalab.datos.PreferenciasApp
 import com.example.lemacdatalab.datos.RepositorioContenidos
 import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.datos.RepositorioUsuarios
 import com.example.lemacdatalab.datos.SesionUsuario
+import com.example.lemacdatalab.model.ModoTema
 import com.example.lemacdatalab.navigation.Rutas
 import com.example.lemacdatalab.ui.pantallas.PantallaDetalle
 import com.example.lemacdatalab.ui.pantallas.PantallaHistorial
@@ -104,6 +112,10 @@ class MainActivity : ComponentActivity() {
         SesionUsuario(applicationContext)
     }
 
+    private val preferencias by lazy {
+        PreferenciasApp(applicationContext)
+    }
+
     private val fabricaViewModels by lazy {
         viewModelFactory {
             initializer {
@@ -156,7 +168,20 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
-            LemacDataLabTheme {
+            val modoTema by preferencias.modoTema.collectAsState()
+            val usarOscuro = when (modoTema) {
+                ModoTema.SISTEMA -> isSystemInDarkTheme()
+                ModoTema.CLARO -> false
+                ModoTema.OSCURO -> true
+            }
+
+            DisposableEffect(usarOscuro) {
+                val estilo = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { usarOscuro }
+                enableEdgeToEdge(statusBarStyle = estilo, navigationBarStyle = estilo)
+                onDispose { }
+            }
+
+            LemacDataLabTheme(darkTheme = usarOscuro) {
                 val navController = rememberNavController()
                 val destinoInicial = remember {
                     if (sesion.haySesion) Rutas.INICIO else Rutas.LOGIN
@@ -207,6 +232,8 @@ class MainActivity : ComponentActivity() {
                         PantallaInicio(
                             viewModel = inicioViewModel,
                             alias = inicioViewModel.alias,
+                            modoTema = modoTema,
+                            alCambiarModoTema = preferencias::cambiarModoTema,
                             alRegistrar = {
                                 registroViewModel.comenzarNuevoRegistro()
                                 navController.navigate(Rutas.REGISTRO)
