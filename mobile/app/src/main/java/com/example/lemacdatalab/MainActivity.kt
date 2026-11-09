@@ -357,24 +357,10 @@ class MainActivity : ComponentActivity() {
 
                     composable(Rutas.HISTORIAL) {
                         PantallaHistorial(
-                            registros = historialViewModel.registrosVisibles,
-                            hayRegistros = historialViewModel.registros.isNotEmpty(),
-                            filtro = historialViewModel.filtro,
-                            busqueda = historialViewModel.busqueda,
-                            cargando = historialViewModel.cargando,
-                            mensajeError = historialViewModel.mensajeError,
-                            mensajeOperacion = historialViewModel.mensajeOperacion,
-                            registroEliminado = historialViewModel.registroEliminado,
-                            alCambiarFiltro = historialViewModel::cambiarFiltro,
-                            alCambiarBusqueda = historialViewModel::cambiarBusqueda,
-                            alLimpiarFiltros = historialViewModel::limpiarFiltros,
+                            viewModel = historialViewModel,
                             alVerDetalle = { id ->
                                 navController.navigate(Rutas.detalle(id))
                             },
-                            alEliminar = historialViewModel::eliminarRegistro,
-                            alDeshacer = historialViewModel::deshacerEliminacion,
-                            alDescartar = historialViewModel::descartarEliminacion,
-                            alLimpiarMensaje = historialViewModel::limpiarMensaje,
                             alVolver = {
                                 navController.popBackStack()
                             }

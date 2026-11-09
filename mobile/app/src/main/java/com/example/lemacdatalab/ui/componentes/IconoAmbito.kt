@@ -15,10 +15,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.Ambito
+import com.example.lemacdatalab.ui.theme.AmbitoAdiccionesClaro
+import com.example.lemacdatalab.ui.theme.AmbitoAdiccionesOscuro
+import com.example.lemacdatalab.ui.theme.AmbitoAnimoClaro
+import com.example.lemacdatalab.ui.theme.AmbitoAnimoOscuro
+import com.example.lemacdatalab.ui.theme.AmbitoDbtClaro
+import com.example.lemacdatalab.ui.theme.AmbitoDbtOscuro
+import com.example.lemacdatalab.ui.theme.AmbitoNeuroClaro
+import com.example.lemacdatalab.ui.theme.AmbitoNeuroOscuro
 
 val Ambito.icono: ImageVector
     get() = when (this) {
@@ -27,6 +37,17 @@ val Ambito.icono: ImageVector
         Ambito.ANIMO -> Icons.Rounded.Mood
         Ambito.ADICCIONES -> Icons.Rounded.Favorite
     }
+
+@Composable
+fun colorAmbito(ambito: Ambito): Color {
+    val oscuro = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    return when (ambito) {
+        Ambito.NEURODESARROLLO -> if (oscuro) AmbitoNeuroOscuro else AmbitoNeuroClaro
+        Ambito.DBT -> if (oscuro) AmbitoDbtOscuro else AmbitoDbtClaro
+        Ambito.ANIMO -> if (oscuro) AmbitoAnimoOscuro else AmbitoAnimoClaro
+        Ambito.ADICCIONES -> if (oscuro) AmbitoAdiccionesOscuro else AmbitoAdiccionesClaro
+    }
+}
 
 @Composable
 fun IconoAmbito(

@@ -72,6 +72,28 @@ fun mesDeFecha(fecha: String): String {
     return "${MESES[mes - 1]} $anio"
 }
 
+fun nombreMesAnio(anio: Int, mes: Int): String = "${MESES[mes - 1]} $anio"
+
+fun diasDelMes(anio: Int, mes: Int): Int =
+    Calendar.getInstance().apply {
+        clear()
+        set(anio, mes - 1, 1)
+    }.getActualMaximum(Calendar.DAY_OF_MONTH)
+
+fun desfaseDesdeLunes(anio: Int, mes: Int): Int {
+    val diaSemana = Calendar.getInstance().apply {
+        clear()
+        set(anio, mes - 1, 1)
+    }.get(Calendar.DAY_OF_WEEK)
+    return (diaSemana + 5) % 7
+}
+
+fun fechaDe(calendario: Calendar): String = formatearFecha(
+    calendario.get(Calendar.DAY_OF_MONTH),
+    calendario.get(Calendar.MONTH) + 1,
+    calendario.get(Calendar.YEAR)
+)
+
 fun describirProximoAviso(momento: Long): String {
     val objetivo = Calendar.getInstance().apply { timeInMillis = momento }
     val hora = String.format(

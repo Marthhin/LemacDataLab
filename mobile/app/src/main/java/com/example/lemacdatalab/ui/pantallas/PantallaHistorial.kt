@@ -18,11 +18,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ViewList
+import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.ErrorOutline
@@ -31,10 +34,14 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -55,49 +62,45 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.RegistroActividad
+import com.example.lemacdatalab.ui.componentes.CalendarioRegistros
 import com.example.lemacdatalab.ui.componentes.FiltrosAmbito
+import com.example.lemacdatalab.ui.componentes.LeyendaAmbitos
 import com.example.lemacdatalab.ui.componentes.TarjetaRegistro
+import com.example.lemacdatalab.util.fechaDeHoy
 import com.example.lemacdatalab.util.mesDeFecha
+import com.example.lemacdatalab.viewmodel.HistorialViewModel
+import com.example.lemacdatalab.viewmodel.VistaHistorial
 
 @Composable
 fun PantallaHistorial(
-    registros: List<RegistroActividad>,
-    hayRegistros: Boolean,
-    filtro: Ambito?,
-    busqueda: String,
-    cargando: Boolean,
-    mensajeError: String,
-    mensajeOperacion: String,
-    registroEliminado: RegistroActividad?,
-    alCambiarFiltro: (Ambito?) -> Unit,
-    alCambiarBusqueda: (String) -> Unit,
-    alLimpiarFiltros: () -> Unit,
+    viewModel: HistorialViewModel,
     alVerDetalle: (Int) -> Unit,
-    alEliminar: (RegistroActividad) -> Unit,
-    alDeshacer: () -> Unit,
-    alDescartar: () -> Unit,
-    alLimpiarMensaje: () -> Unit,
     alVolver: () -> Unit
 ) {
     val estadoSnackbar = remember { SnackbarHostState() }
-    val descartarActual by rememberUpdatedState(alDescartar)
+    val descartarActual by rememberUpdatedState(viewModel::descartarEliminacion)
+    val registros = viewModel.registrosVisibles
+    val hayRegistros = viewModel.registros.isNotEmpty()
 
-    LaunchedEffect(registroEliminado) {
-        val eliminado = registroEliminado ?: return@LaunchedEffect
+    LaunchedEffect(viewModel.registroEliminado) {
+        val eliminado = viewModel.registroEliminado ?: return@LaunchedEffect
         val resultado = estadoSnackbar.showSnackbar(
             message = "“${eliminado.tipoActividad}” eliminado",
             actionLabel = "Deshacer",
             duration = SnackbarDuration.Short
         )
-        if (resultado == SnackbarResult.ActionPerformed) alDeshacer() else alDescartar()
+        if (resultado == SnackbarResult.ActionPerformed) {
+            viewModel.deshacerEliminacion()
+        } else {
+            viewModel.descartarEliminacion()
+        }
     }
 
-    LaunchedEffect(mensajeOperacion) {
-        if (mensajeOperacion.isNotEmpty()) {
-            estadoSnackbar.showSnackbar(mensajeOperacion)
-            alLimpiarMensaje()
+    LaunchedEffect(viewModel.mensajeOperacion) {
+        if (viewModel.mensajeOperacion.isNotEmpty()) {
+            estadoSnackbar.showSnackbar(viewModel.mensajeOperacion)
+            viewModel.limpiarMensaje()
         }
     }
 
@@ -138,7 +141,7 @@ fun PantallaHistorial(
                         color = MaterialTheme.colorScheme.onBackground
                     )
 
-                    if (!cargando && mensajeError.isEmpty()) {
+                    if (!viewModel.cargando && viewModel.mensajeError.isEmpty()) {
                         val cantidad = "${registros.size} " +
                                 if (registros.size == 1) "registro" else "registros"
                         Text(
@@ -156,27 +159,32 @@ fun PantallaHistorial(
 
             if (hayRegistros) {
                 CampoBusqueda(
-                    texto = busqueda,
-                    alCambiar = alCambiarBusqueda
+                    texto = viewModel.busqueda,
+                    alCambiar = viewModel::cambiarBusqueda
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                FiltrosAmbito(filtro = filtro, alCambiarFiltro = alCambiarFiltro)
+                FiltrosAmbito(filtro = viewModel.filtro, alCambiarFiltro = viewModel::cambiarFiltro)
+                Spacer(modifier = Modifier.height(8.dp))
+                SelectorVista(
+                    vista = viewModel.vista,
+                    alCambiar = viewModel::cambiarVista
+                )
             }
 
             when {
-                cargando -> EstadoHistorial(modifier = Modifier.weight(1f)) {
+                viewModel.cargando -> EstadoHistorial(modifier = Modifier.weight(1f)) {
                     CircularProgressIndicator()
                     Text("Cargando registros...")
                 }
 
-                mensajeError.isNotEmpty() -> EstadoHistorial(modifier = Modifier.weight(1f)) {
+                viewModel.mensajeError.isNotEmpty() -> EstadoHistorial(modifier = Modifier.weight(1f)) {
                     Icon(
                         imageVector = Icons.Rounded.ErrorOutline,
                         contentDescription = null,
                         modifier = Modifier.size(48.dp),
                         tint = MaterialTheme.colorScheme.error
                     )
-                    Text(text = mensajeError, color = MaterialTheme.colorScheme.error)
+                    Text(text = viewModel.mensajeError, color = MaterialTheme.colorScheme.error)
                 }
 
                 !hayRegistros -> EstadoHistorial(modifier = Modifier.weight(1f)) {
@@ -197,23 +205,30 @@ fun PantallaHistorial(
                     )
                 }
 
+                viewModel.vista == VistaHistorial.CALENDARIO -> VistaCalendario(
+                    viewModel = viewModel,
+                    registros = registros,
+                    alVerDetalle = alVerDetalle,
+                    modifier = Modifier.weight(1f)
+                )
+
                 registros.isEmpty() -> EstadoHistorial(modifier = Modifier.weight(1f)) {
                     Icon(
-                        imageVector = if (busqueda.isNotBlank()) Icons.Rounded.SearchOff else Icons.Rounded.FilterAltOff,
+                        imageVector = if (viewModel.busqueda.isNotBlank()) Icons.Rounded.SearchOff else Icons.Rounded.FilterAltOff,
                         contentDescription = null,
                         modifier = Modifier.size(56.dp),
                         tint = MaterialTheme.colorScheme.outline
                     )
                     Text(
-                        text = if (busqueda.isNotBlank()) {
-                            "Sin resultados para “${busqueda.trim()}”"
+                        text = if (viewModel.busqueda.isNotBlank()) {
+                            "Sin resultados para “${viewModel.busqueda.trim()}”"
                         } else {
-                            "No hay registros de ${filtro?.nombre ?: "este ámbito"}"
+                            "No hay registros de ${viewModel.filtro?.nombre ?: "este ámbito"}"
                         },
                         style = MaterialTheme.typography.titleMedium,
                         textAlign = TextAlign.Center
                     )
-                    TextButton(onClick = alLimpiarFiltros) {
+                    TextButton(onClick = viewModel::limpiarFiltros) {
                         Text("Ver todos")
                     }
                 }
@@ -221,7 +236,7 @@ fun PantallaHistorial(
                 else -> ListaPorMes(
                     registros = registros,
                     alVerDetalle = alVerDetalle,
-                    alEliminar = alEliminar,
+                    alEliminar = viewModel::eliminarRegistro,
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -234,6 +249,103 @@ fun PantallaHistorial(
                 .windowInsetsPadding(WindowInsets.safeDrawing)
                 .padding(16.dp)
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SelectorVista(
+    vista: VistaHistorial,
+    alCambiar: (VistaHistorial) -> Unit
+) {
+    SingleChoiceSegmentedButtonRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp)
+    ) {
+        VistaHistorial.entries.forEachIndexed { indice, opcion ->
+            SegmentedButton(
+                selected = vista == opcion,
+                onClick = { alCambiar(opcion) },
+                shape = SegmentedButtonDefaults.itemShape(index = indice, count = VistaHistorial.entries.size),
+                icon = {
+                    Icon(
+                        imageVector = if (opcion == VistaHistorial.LISTA) {
+                            Icons.AutoMirrored.Rounded.ViewList
+                        } else {
+                            Icons.Rounded.CalendarMonth
+                        },
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            ) {
+                Text(if (opcion == VistaHistorial.LISTA) "Lista" else "Calendario")
+            }
+        }
+    }
+}
+
+@Composable
+private fun VistaCalendario(
+    viewModel: HistorialViewModel,
+    registros: List<RegistroActividad>,
+    alVerDetalle: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val porFecha = registros.groupBy { it.fechaHora }
+    val delDia = porFecha[viewModel.diaSeleccionado].orEmpty()
+
+    LazyColumn(
+        modifier = modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item(key = "calendario") {
+            CalendarioRegistros(
+                anio = viewModel.anioVisible,
+                mes = viewModel.mesVisible,
+                registrosPorFecha = porFecha,
+                diaSeleccionado = viewModel.diaSeleccionado,
+                puedeAvanzar = !viewModel.esMesActual,
+                alMesAnterior = viewModel::mesAnterior,
+                alMesSiguiente = viewModel::mesSiguiente,
+                alSeleccionarDia = viewModel::seleccionarDia
+            )
+        }
+
+        item(key = "leyenda") {
+            LeyendaAmbitos()
+        }
+
+        item(key = "titulo_dia") {
+            Text(
+                text = if (viewModel.diaSeleccionado == fechaDeHoy()) {
+                    "HOY · ${viewModel.diaSeleccionado}"
+                } else {
+                    viewModel.diaSeleccionado
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+
+        if (delDia.isEmpty()) {
+            item(key = "sin_registros_dia") {
+                Text(
+                    text = "No hay registros este día.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            tarjetasDeslizables(
+                registros = delDia,
+                alVerDetalle = alVerDetalle,
+                alEliminar = viewModel::eliminarRegistro
+            )
+        }
     }
 }
 
@@ -291,15 +403,27 @@ private fun ListaPorMes(
                 )
             }
 
-            items(items = lista, key = { it.idRegistro }) { registro ->
-                TarjetaDeslizable(
-                    registro = registro,
-                    alPresionar = { alVerDetalle(registro.idRegistro) },
-                    alEliminar = { alEliminar(registro) },
-                    modifier = Modifier.animateItem()
-                )
-            }
+            tarjetasDeslizables(
+                registros = lista,
+                alVerDetalle = alVerDetalle,
+                alEliminar = alEliminar
+            )
         }
+    }
+}
+
+private fun LazyListScope.tarjetasDeslizables(
+    registros: List<RegistroActividad>,
+    alVerDetalle: (Int) -> Unit,
+    alEliminar: (RegistroActividad) -> Unit
+) {
+    items(items = registros, key = { it.idRegistro }) { registro ->
+        TarjetaDeslizable(
+            registro = registro,
+            alPresionar = { alVerDetalle(registro.idRegistro) },
+            alEliminar = { alEliminar(registro) },
+            modifier = Modifier.animateItem()
+        )
     }
 }
 

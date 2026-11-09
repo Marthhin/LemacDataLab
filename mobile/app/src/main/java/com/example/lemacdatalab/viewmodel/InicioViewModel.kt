@@ -17,7 +17,10 @@ import com.example.lemacdatalab.model.DestinoInicio
 import com.example.lemacdatalab.model.OpcionInicio
 import com.example.lemacdatalab.model.PuntoGrafico
 import com.example.lemacdatalab.model.RegistroActividad
+import com.example.lemacdatalab.util.calcularRacha
 import com.example.lemacdatalab.util.claveFecha
+import com.example.lemacdatalab.util.fechaDeHoy
+import com.example.lemacdatalab.util.ultimosSieteDias
 import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_MAXIMA
 import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_MINIMA
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -73,6 +76,15 @@ class InicioViewModel(
     var puntosGrafico by mutableStateOf<List<PuntoGrafico>>(emptyList())
         private set
 
+    var racha by mutableStateOf(0)
+        private set
+
+    var semana by mutableStateOf(List(7) { false })
+        private set
+
+    var registroHoy by mutableStateOf(false)
+        private set
+
     var cargando by mutableStateOf(true)
         private set
 
@@ -114,6 +126,10 @@ class InicioViewModel(
                     totalRegistros = lista.size
                     ultimoRegistro = lista.maxByOrNull { it.idRegistro }
                     puntosGrafico = calcularPuntos(lista)
+                    val fechas = lista.map { it.fechaHora }.toSet()
+                    racha = calcularRacha(fechas)
+                    semana = ultimosSieteDias(fechas)
+                    registroHoy = fechaDeHoy() in fechas
                     cargando = false
                     mensajeError = ""
                 }

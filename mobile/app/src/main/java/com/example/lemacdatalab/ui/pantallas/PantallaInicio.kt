@@ -37,6 +37,7 @@ import com.example.lemacdatalab.ui.componentes.TarjetaCartaAnimo
 import com.example.lemacdatalab.ui.componentes.TarjetaOpcion
 import com.example.lemacdatalab.ui.componentes.TarjetaPermisoNotificaciones
 import com.example.lemacdatalab.ui.componentes.TarjetaPrincipal
+import com.example.lemacdatalab.ui.componentes.TarjetaRacha
 import com.example.lemacdatalab.ui.componentes.TarjetaRegistro
 import com.example.lemacdatalab.ui.componentes.TarjetaSinRegistros
 import com.example.lemacdatalab.ui.componentes.rememberPermisoNotificaciones
@@ -131,6 +132,14 @@ fun PantallaInicio(
             opcion = viewModel.principal,
             alPresionar = alRegistrar
         )
+
+        if (!viewModel.cargando && viewModel.racha > 0) {
+            TarjetaRacha(
+                racha = viewModel.racha,
+                semana = viewModel.semana,
+                registroHoy = viewModel.registroHoy
+            )
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 

@@ -10,6 +10,7 @@ import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.datos.SesionUsuario
 import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.RegistroActividad
+import com.example.lemacdatalab.util.fechaDeHoy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.catch
@@ -17,6 +18,12 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.util.Calendar
+
+enum class VistaHistorial {
+    LISTA,
+    CALENDARIO
+}
 
 class HistorialViewModel(
     private val repositorio: RepositorioRegistros,
@@ -47,6 +54,24 @@ class HistorialViewModel(
     var busqueda by mutableStateOf("")
         private set
 
+    var vista by mutableStateOf(VistaHistorial.LISTA)
+        private set
+
+    var anioVisible by mutableStateOf(Calendar.getInstance().get(Calendar.YEAR))
+        private set
+
+    var mesVisible by mutableStateOf(Calendar.getInstance().get(Calendar.MONTH) + 1)
+        private set
+
+    var diaSeleccionado by mutableStateOf(fechaDeHoy())
+        private set
+
+    val esMesActual: Boolean
+        get() {
+            val hoy = Calendar.getInstance()
+            return anioVisible == hoy.get(Calendar.YEAR) && mesVisible == hoy.get(Calendar.MONTH) + 1
+        }
+
     val registrosVisibles: List<RegistroActividad>
         get() {
             val ambito = filtro
@@ -63,6 +88,33 @@ class HistorialViewModel(
 
     fun cambiarFiltro(ambito: Ambito?) {
         filtro = ambito
+    }
+
+    fun cambiarVista(nueva: VistaHistorial) {
+        vista = nueva
+    }
+
+    fun mesAnterior() {
+        if (mesVisible == 1) {
+            mesVisible = 12
+            anioVisible -= 1
+        } else {
+            mesVisible -= 1
+        }
+    }
+
+    fun mesSiguiente() {
+        if (esMesActual) return
+        if (mesVisible == 12) {
+            mesVisible = 1
+            anioVisible += 1
+        } else {
+            mesVisible += 1
+        }
+    }
+
+    fun seleccionarDia(fecha: String) {
+        diaSeleccionado = fecha
     }
 
     fun cambiarBusqueda(texto: String) {
