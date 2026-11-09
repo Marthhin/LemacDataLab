@@ -30,6 +30,9 @@ interface RegistroDao {
     @Query("SELECT * FROM registros WHERE id_registro = :id")
     fun observarPorId(id: Int): Flow<RegistroActividad?>
 
+    @Query("SELECT COUNT(*) FROM registros WHERE id_usuario = :idUsuario AND fecha_hora = :fecha")
+    suspend fun contarRegistrosDelDia(idUsuario: Int, fecha: String): Int
+
     @Update
     suspend fun actualizar(registro: RegistroActividad): Int
 

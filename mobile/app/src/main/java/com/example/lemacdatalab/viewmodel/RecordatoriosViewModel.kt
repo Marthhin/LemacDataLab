@@ -25,12 +25,20 @@ class RecordatoriosViewModel(
         guardar(config.value.copy(hora = hora, minuto = minuto))
     }
 
+    fun alternarDia(dia: Int) {
+        val actuales = config.value.dias
+        if (dia in actuales && actuales.size == 1) return
+
+        val nuevos = if (dia in actuales) actuales - dia else actuales + dia
+        guardar(config.value.copy(dias = nuevos))
+    }
+
+    fun cambiarOmitir(omitir: Boolean) {
+        guardar(config.value.copy(omitirSiRegistrado = omitir))
+    }
+
     private fun guardar(nueva: ConfigRecordatorio) {
         preferencias.guardarRecordatorio(nueva)
-        if (nueva.activo) {
-            programador.programar(nueva.hora, nueva.minuto)
-        } else {
-            programador.cancelar()
-        }
+        programador.programar(nueva)
     }
 }

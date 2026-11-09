@@ -10,9 +10,6 @@ class ReceptorReinicio : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_BOOT_COMPLETED) return
 
-        val config = PreferenciasApp(context).recordatorio.value
-        if (config.activo) {
-            ProgramadorRecordatorios(context).programar(config.hora, config.minuto)
-        }
+        ProgramadorRecordatorios(context).programar(PreferenciasApp(context).recordatorio.value)
     }
 }

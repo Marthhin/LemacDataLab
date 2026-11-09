@@ -179,10 +179,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        val recordatorio = preferencias.recordatorio.value
-        if (recordatorio.activo) {
-            programador.programar(recordatorio.hora, recordatorio.minuto)
-        }
+        programador.programar(preferencias.recordatorio.value)
 
         setContent {
             val modoOscuroGuardado by preferencias.modoOscuro.collectAsState()
@@ -242,10 +239,14 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     ) {
+                        val permisoPreguntado by preferencias.permisoPreguntado.collectAsState()
+
                         PantallaInicio(
                             viewModel = inicioViewModel,
                             alias = inicioViewModel.alias,
                             modoOscuro = usarOscuro,
+                            mostrarAvisoPermiso = !permisoPreguntado,
+                            alMarcarPermisoPreguntado = preferencias::marcarPermisoPreguntado,
                             alCambiarTema = {
                                 preferencias.cambiarModoOscuro(!usarOscuro)
                             },
@@ -419,6 +420,8 @@ class MainActivity : ComponentActivity() {
                             alActivar = recordatoriosViewModel::activar,
                             alDesactivar = recordatoriosViewModel::desactivar,
                             alCambiarHora = recordatoriosViewModel::cambiarHora,
+                            alAlternarDia = recordatoriosViewModel::alternarDia,
+                            alCambiarOmitir = recordatoriosViewModel::cambiarOmitir,
                             alVolver = {
                                 navController.popBackStack()
                             }

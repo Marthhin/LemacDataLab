@@ -4,17 +4,24 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import java.util.Calendar
+import com.example.lemacdatalab.model.ConfigRecordatorio
 
 class ProgramadorRecordatorios(context: Context) {
 
     private val contexto = context.applicationContext
     private val alarmas = contexto.getSystemService(AlarmManager::class.java)
 
-    fun programar(hora: Int, minuto: Int) {
+    fun programar(config: ConfigRecordatorio) {
+        val disparo = config.proximoDisparo()
+
+        if (!config.activo || disparo == null) {
+            cancelar()
+            return
+        }
+
         alarmas.setAndAllowWhileIdle(
             AlarmManager.RTC_WAKEUP,
-            proximoDisparo(hora, minuto),
+            disparo,
             intentPendiente()
         )
     }
@@ -30,19 +37,6 @@ class ProgramadorRecordatorios(context: Context) {
             Intent(contexto, ReceptorRecordatorio::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-
-    private fun proximoDisparo(hora: Int, minuto: Int): Long {
-        val disparo = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, hora)
-            set(Calendar.MINUTE, minuto)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        if (disparo.timeInMillis <= System.currentTimeMillis()) {
-            disparo.add(Calendar.DAY_OF_YEAR, 1)
-        }
-        return disparo.timeInMillis
-    }
 
     private companion object {
         const val CODIGO_ALARMA = 100

@@ -1,5 +1,6 @@
 package com.example.lemacdatalab.ui.pantallas
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -38,9 +39,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.ui.componentes.TarjetaCartaAnimo
 import com.example.lemacdatalab.ui.componentes.TarjetaOpcion
+import com.example.lemacdatalab.ui.componentes.TarjetaPermisoNotificaciones
 import com.example.lemacdatalab.ui.componentes.TarjetaPrincipal
 import com.example.lemacdatalab.ui.componentes.TarjetaRegistro
 import com.example.lemacdatalab.ui.componentes.TarjetaSinRegistros
+import com.example.lemacdatalab.ui.componentes.rememberPermisoNotificaciones
 import com.example.lemacdatalab.viewmodel.InicioViewModel
 
 @Composable
@@ -48,6 +51,8 @@ fun PantallaInicio(
     viewModel: InicioViewModel,
     alias: String,
     modoOscuro: Boolean,
+    mostrarAvisoPermiso: Boolean,
+    alMarcarPermisoPreguntado: () -> Unit,
     alCambiarTema: () -> Unit,
     alRegistrar: () -> Unit,
     alVerHistorial: () -> Unit,
@@ -57,6 +62,7 @@ fun PantallaInicio(
     alCerrarSesion: () -> Unit
 ) {
     var confirmarSalida by rememberSaveable { mutableStateOf(false) }
+    val permiso = rememberPermisoNotificaciones()
 
     if (confirmarSalida) {
         AlertDialog(
@@ -130,6 +136,18 @@ fun PantallaInicio(
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
+
+        AnimatedVisibility(
+            visible = mostrarAvisoPermiso && permiso.puedePreguntar && !permiso.concedido
+        ) {
+            TarjetaPermisoNotificaciones(
+                alPermitir = {
+                    alMarcarPermisoPreguntado()
+                    permiso.solicitar()
+                },
+                alOmitir = alMarcarPermisoPreguntado
+            )
+        }
 
         Spacer(modifier = Modifier.height(4.dp))
 

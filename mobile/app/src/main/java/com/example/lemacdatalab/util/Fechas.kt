@@ -2,10 +2,21 @@ package com.example.lemacdatalab.util
 
 import java.util.Calendar
 import java.util.Locale
+import kotlin.math.roundToInt
 
 private val MESES = listOf(
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+)
+
+private val NOMBRES_DIAS = mapOf(
+    Calendar.SUNDAY to "domingo",
+    Calendar.MONDAY to "lunes",
+    Calendar.TUESDAY to "martes",
+    Calendar.WEDNESDAY to "miércoles",
+    Calendar.THURSDAY to "jueves",
+    Calendar.FRIDAY to "viernes",
+    Calendar.SATURDAY to "sábado"
 )
 
 fun formatearFecha(dia: Int, mes: Int, anio: Int): String =
@@ -38,4 +49,36 @@ fun mesDeFecha(fecha: String): String {
     val anio = partes.getOrNull(2)
     if (mes == null || mes !in 1..12 || anio == null) return "Sin fecha"
     return "${MESES[mes - 1]} $anio"
+}
+
+fun describirProximoAviso(momento: Long): String {
+    val objetivo = Calendar.getInstance().apply { timeInMillis = momento }
+    val hora = String.format(
+        Locale.ROOT,
+        "%02d:%02d",
+        objetivo.get(Calendar.HOUR_OF_DAY),
+        objetivo.get(Calendar.MINUTE)
+    )
+
+    val dia = when (diasDesdeHoy(objetivo)) {
+        0 -> "hoy"
+        1 -> "mañana"
+        else -> "el ${NOMBRES_DIAS[objetivo.get(Calendar.DAY_OF_WEEK)]}"
+    }
+
+    return "$dia a las $hora"
+}
+
+private fun diasDesdeHoy(objetivo: Calendar): Int {
+    val inicioHoy = inicioDelDia(Calendar.getInstance())
+    val inicioObjetivo = inicioDelDia(objetivo.clone() as Calendar)
+    return ((inicioObjetivo - inicioHoy) / 86_400_000.0).roundToInt()
+}
+
+private fun inicioDelDia(fecha: Calendar): Long {
+    fecha.set(Calendar.HOUR_OF_DAY, 0)
+    fecha.set(Calendar.MINUTE, 0)
+    fecha.set(Calendar.SECOND, 0)
+    fecha.set(Calendar.MILLISECOND, 0)
+    return fecha.timeInMillis
 }

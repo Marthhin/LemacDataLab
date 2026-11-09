@@ -7,16 +7,20 @@ class RepositorioRegistros(
     private val registroDao: RegistroDao
 ) {
 
-    fun observarPorId(id: Int): Flow<RegistroActividad?> {
-        return registroDao.observarPorId(id)
-    }
-
     fun observarRegistros(idUsuario: Int): Flow<List<RegistroActividad>> {
         return registroDao.observarRegistros(idUsuario)
     }
 
+    fun observarPorId(id: Int): Flow<RegistroActividad?> {
+        return registroDao.observarPorId(id)
+    }
+
     suspend fun obtenerPorId(id: Int): RegistroActividad? {
         return registroDao.obtenerPorId(id)
+    }
+
+    suspend fun tieneRegistroEnFecha(idUsuario: Int, fecha: String): Boolean {
+        return registroDao.contarRegistrosDelDia(idUsuario, fecha) > 0
     }
 
     suspend fun insertar(registro: RegistroActividad): Long {

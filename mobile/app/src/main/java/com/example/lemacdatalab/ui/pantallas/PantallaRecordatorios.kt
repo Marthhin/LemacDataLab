@@ -1,11 +1,6 @@
 package com.example.lemacdatalab.ui.pantallas
 
-import android.Manifest
 import android.app.TimePickerDialog
-import android.content.pm.PackageManager
-import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,29 +8,26 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Alarm
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.NotificationsActive
+import androidx.compose.material.icons.rounded.NotificationsOff
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -43,10 +35,11 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,14 +48,30 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import com.example.lemacdatalab.model.ConfigRecordatorio
-import com.example.lemacdatalab.notificaciones.NotificacionesRecordatorio
+import com.example.lemacdatalab.ui.componentes.rememberPermisoNotificaciones
+import com.example.lemacdatalab.util.abrirAjustesNotificaciones
+import com.example.lemacdatalab.util.describirProximoAviso
+import java.util.Calendar
 
-private data class ResultadoRecordatorio(
-    val texto: String,
-    val exito: Boolean
+private data class DiaSemana(
+    val valor: Int,
+    val inicial: String,
+    val nombre: String
+)
+
+private val DIAS_SEMANA = listOf(
+    DiaSemana(Calendar.MONDAY, "L", "Lunes"),
+    DiaSemana(Calendar.TUESDAY, "M", "Martes"),
+    DiaSemana(Calendar.WEDNESDAY, "M", "Miércoles"),
+    DiaSemana(Calendar.THURSDAY, "J", "Jueves"),
+    DiaSemana(Calendar.FRIDAY, "V", "Viernes"),
+    DiaSemana(Calendar.SATURDAY, "S", "Sábado"),
+    DiaSemana(Calendar.SUNDAY, "D", "Domingo")
 )
 
 @Composable
@@ -71,68 +80,25 @@ fun PantallaRecordatorios(
     alActivar: () -> Unit,
     alDesactivar: () -> Unit,
     alCambiarHora: (Int, Int) -> Unit,
+    alAlternarDia: (Int) -> Unit,
+    alCambiarOmitir: (Boolean) -> Unit,
     alVolver: () -> Unit
 ) {
     val contexto = LocalContext.current
+    val permiso = rememberPermisoNotificaciones()
+    var activarAlConceder by remember { mutableStateOf(false) }
 
-    var resultado by remember { mutableStateOf<ResultadoRecordatorio?>(null) }
-    var accionPendiente by remember { mutableStateOf<(() -> Unit)?>(null) }
-
-    val enviarPrueba: () -> Unit = {
-        resultado = if (NotificacionesRecordatorio.mostrar(contexto)) {
-            ResultadoRecordatorio("Aviso enviado. Revisa la barra de notificaciones.", true)
-        } else {
-            ResultadoRecordatorio(
-                "Las notificaciones están desactivadas. Puedes activarlas en los ajustes de la aplicación.",
-                false
-            )
-        }
-    }
-
-    val activarRecordatorio: () -> Unit = {
-        alActivar()
-        resultado = ResultadoRecordatorio(
-            "Listo. Te avisaremos todos los días a las ${config.horaTexto}.",
-            true
-        )
-    }
-
-    val solicitarPermiso = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { permitido ->
-        if (permitido) {
-            accionPendiente?.invoke()
-        } else {
-            resultado = ResultadoRecordatorio(
-                "Sin permiso de notificaciones no podemos enviarte avisos. Puedes activarlo en los ajustes de la aplicación.",
-                false
-            )
-        }
-        accionPendiente = null
-    }
-
-    fun conPermiso(accion: () -> Unit) {
-        val tienePermiso = Build.VERSION.SDK_INT < 33 ||
-                ContextCompat.checkSelfPermission(
-                    contexto,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED
-
-        if (tienePermiso) {
-            accion()
-        } else {
-            accionPendiente = accion
-            solicitarPermiso.launch(Manifest.permission.POST_NOTIFICATIONS)
+    LaunchedEffect(permiso.concedido) {
+        if (permiso.concedido && activarAlConceder) {
+            activarAlConceder = false
+            alActivar()
         }
     }
 
     fun elegirHora() {
         TimePickerDialog(
             contexto,
-            { _, hora, minuto ->
-                alCambiarHora(hora, minuto)
-                resultado = null
-            },
+            { _, hora, minuto -> alCambiarHora(hora, minuto) },
             config.hora,
             config.minuto,
             true
@@ -174,33 +140,51 @@ fun PantallaRecordatorios(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Un aviso diario y discreto para acordarte de registrar cómo va tu día.",
+                text = "Un aviso discreto para acordarte de registrar cómo va tu día.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            TarjetaRecordatorioDiario(
+            if (!permiso.concedido) {
+                AvisoNotificacionesDesactivadas(
+                    alAbrirAjustes = { abrirAjustesNotificaciones(contexto) }
+                )
+            }
+
+            TarjetaRecordatorio(
                 config = config,
                 alCambiarActivo = { activo ->
-                    if (activo) {
-                        conPermiso(activarRecordatorio)
-                    } else {
-                        alDesactivar()
-                        resultado = null
+                    when {
+                        !activo -> alDesactivar()
+                        permiso.concedido -> alActivar()
+                        else -> {
+                            activarAlConceder = true
+                            permiso.solicitar()
+                        }
                     }
                 },
-                alElegirHora = { elegirHora() }
+                alElegirHora = { elegirHora() },
+                alAlternarDia = alAlternarDia,
+                alCambiarOmitir = alCambiarOmitir
             )
 
-            resultado?.let { TarjetaResultadoRecordatorio(it) }
-
-            Text(
-                text = "ASÍ SE VERÁ EL AVISO",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            VistaPreviaRecordatorio()
+            if (config.activo) {
+                config.proximoDisparo()?.let { momento ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Rounded.Event,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = "Próximo aviso: ${describirProximoAviso(momento)}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(start = 10.dp)
+                        )
+                    }
+                }
+            }
 
             Row(verticalAlignment = Alignment.Top) {
                 Icon(
@@ -219,57 +203,33 @@ fun PantallaRecordatorios(
                 )
             }
 
-            OutlinedButton(
-                onClick = { conPermiso(enviarPrueba) },
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 52.dp)
-            ) {
+            Row(verticalAlignment = Alignment.Top) {
                 Icon(
-                    imageVector = Icons.Rounded.NotificationsActive,
+                    imageVector = Icons.Rounded.Info,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Enviar aviso de prueba")
-            }
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                Text(
+                    text = "Puede llegar con algunos minutos de diferencia: Android agrupa las alarmas para cuidar la batería.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 10.dp)
                 )
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Info,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "El aviso puede llegar con algunos minutos de diferencia: Android agrupa las alarmas para cuidar la batería.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 12.dp)
-                    )
-                }
             }
         }
     }
 }
 
 @Composable
-private fun TarjetaRecordatorioDiario(
+private fun TarjetaRecordatorio(
     config: ConfigRecordatorio,
     alCambiarActivo: (Boolean) -> Unit,
-    alElegirHora: () -> Unit
+    alElegirHora: () -> Unit,
+    alAlternarDia: (Int) -> Unit,
+    alCambiarOmitir: (Boolean) -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(20.dp),
@@ -282,7 +242,7 @@ private fun TarjetaRecordatorioDiario(
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -307,15 +267,11 @@ private fun TarjetaRecordatorioDiario(
                         .padding(horizontal = 12.dp)
                 ) {
                     Text(
-                        text = "Recordatorio diario",
+                        text = "Recordatorio",
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
-                        text = if (config.activo) {
-                            "Todos los días a las ${config.horaTexto}"
-                        } else {
-                            "Desactivado"
-                        },
+                        text = if (config.activo) "Activado a las ${config.horaTexto}" else "Desactivado",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -336,7 +292,7 @@ private fun TarjetaRecordatorioDiario(
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
                         .clickable(onClick = alElegirHora)
-                        .padding(vertical = 8.dp)
+                        .padding(vertical = 6.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Rounded.Schedule,
@@ -364,99 +320,130 @@ private fun TarjetaRecordatorioDiario(
                             .size(18.dp)
                     )
                 }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "DÍAS",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    SelectorDias(dias = config.dias, alAlternarDia = alAlternarDia)
+                    if (config.dias.size == 1) {
+                        Text(
+                            text = "Debe quedar al menos un día seleccionado.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "No avisarme si ya registré hoy",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "Si ese día ya hiciste un registro, no te enviaremos el aviso.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = config.omitirSiRegistrado,
+                        onCheckedChange = alCambiarOmitir,
+                        modifier = Modifier.padding(start = 12.dp)
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun VistaPreviaRecordatorio() {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest
-        )
+private fun SelectorDias(
+    dias: Set<Int>,
+    alAlternarDia: (Int) -> Unit
+) {
+    Row(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.Top
-        ) {
+        DIAS_SEMANA.forEach { dia ->
+            val seleccionado = dia.valor in dias
+
             Box(
+                contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .size(40.dp)
-                    .background(MaterialTheme.colorScheme.primary, CircleShape),
-                contentAlignment = Alignment.Center
+                    .clip(CircleShape)
+                    .background(
+                        if (seleccionado) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainerHighest
+                        }
+                    )
+                    .toggleable(
+                        value = seleccionado,
+                        role = Role.Checkbox,
+                        onValueChange = { alAlternarDia(dia.valor) }
+                    )
+                    .semantics { contentDescription = dia.nombre }
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.NotificationsActive,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(22.dp)
+                Text(
+                    text = dia.inicial,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (seleccionado) {
+                        MaterialTheme.colorScheme.onPrimary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
                 )
             }
+        }
+    }
+}
 
+@Composable
+private fun AvisoNotificacionesDesactivadas(alAbrirAjustes: () -> Unit) {
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.errorContainer,
+            contentColor = MaterialTheme.colorScheme.onErrorContainer
+        ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(Icons.Rounded.NotificationsOff, contentDescription = null)
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                    .padding(start = 12.dp)
             ) {
                 Text(
-                    text = "LemacDataLab",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = NotificacionesRecordatorio.TITULO,
+                    text = "Notificaciones desactivadas",
                     style = MaterialTheme.typography.titleSmall
                 )
                 Text(
-                    text = NotificacionesRecordatorio.TEXTO,
+                    text = "Actívalas para recibir tus recordatorios.",
                     style = MaterialTheme.typography.bodyMedium
                 )
+                TextButton(
+                    onClick = alAbrirAjustes,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("Abrir ajustes")
+                }
             }
-        }
-    }
-}
-
-@Composable
-private fun TarjetaResultadoRecordatorio(resultado: ResultadoRecordatorio) {
-    val fondo = if (resultado.exito) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.errorContainer
-    }
-
-    val colorTexto = if (resultado.exito) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onErrorContainer
-    }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = fondo,
-            contentColor = colorTexto
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            Icon(
-                imageVector = if (resultado.exito) Icons.Rounded.CheckCircle else Icons.Rounded.ErrorOutline,
-                contentDescription = null
-            )
-            Text(
-                text = resultado.texto,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 12.dp)
-            )
         }
     }
 }
