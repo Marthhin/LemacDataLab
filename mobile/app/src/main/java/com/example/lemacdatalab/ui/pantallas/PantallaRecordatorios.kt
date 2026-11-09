@@ -1,6 +1,5 @@
 package com.example.lemacdatalab.ui.pantallas
 
-import android.app.TimePickerDialog
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -53,6 +52,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.ConfigRecordatorio
+import com.example.lemacdatalab.ui.componentes.HojaSelectorHora
 import com.example.lemacdatalab.ui.componentes.rememberPermisoNotificaciones
 import com.example.lemacdatalab.util.abrirAjustesNotificaciones
 import com.example.lemacdatalab.util.describirProximoAviso
@@ -87,6 +87,7 @@ fun PantallaRecordatorios(
     val contexto = LocalContext.current
     val permiso = rememberPermisoNotificaciones()
     var activarAlConceder by remember { mutableStateOf(false) }
+    var mostrarSelectorHora by remember { mutableStateOf(false) }
 
     LaunchedEffect(permiso.concedido) {
         if (permiso.concedido && activarAlConceder) {
@@ -95,14 +96,13 @@ fun PantallaRecordatorios(
         }
     }
 
-    fun elegirHora() {
-        TimePickerDialog(
-            contexto,
-            { _, hora, minuto -> alCambiarHora(hora, minuto) },
-            config.hora,
-            config.minuto,
-            true
-        ).show()
+    if (mostrarSelectorHora) {
+        HojaSelectorHora(
+            hora = config.hora,
+            minuto = config.minuto,
+            alConfirmar = alCambiarHora,
+            alCerrar = { mostrarSelectorHora = false }
+        )
     }
 
     Column(
@@ -163,7 +163,7 @@ fun PantallaRecordatorios(
                         }
                     }
                 },
-                alElegirHora = { elegirHora() },
+                alElegirHora = { mostrarSelectorHora = true },
                 alAlternarDia = alAlternarDia,
                 alCambiarOmitir = alCambiarOmitir
             )
