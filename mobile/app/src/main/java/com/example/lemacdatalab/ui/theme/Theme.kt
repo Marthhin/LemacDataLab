@@ -29,10 +29,10 @@ private val EsquemaClaro = lightColorScheme(
     outline = BordeClaro,
     outlineVariant = BordeSuaveClaro,
     surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFEFF5F4),
-    surfaceContainer = Color(0xFFE9EFEE),
-    surfaceContainerHigh = Color(0xFFE3EAE8),
-    surfaceContainerHighest = Color(0xFFDDE4E3)
+    surfaceContainerLow = Color.White,
+    surfaceContainer = Color(0xFFF1EEE8),
+    surfaceContainerHigh = Color(0xFFECE8E1),
+    surfaceContainerHighest = Color(0xFFE6E2DA)
 )
 
 private val EsquemaOscuro = darkColorScheme(
@@ -52,15 +52,15 @@ private val EsquemaOscuro = darkColorScheme(
     onBackground = TextoOscuro,
     surface = FondoOscuro,
     onSurface = TextoOscuro,
-    surfaceVariant = TextoVarianteClaro,
-    onSurfaceVariant = BordeSuaveClaro,
+    surfaceVariant = BordeSuaveOscuro,
+    onSurfaceVariant = TextoVarianteOscuro,
     outline = BordeOscuro,
-    outlineVariant = TextoVarianteClaro,
-    surfaceContainerLowest = Color(0xFF090F0F),
-    surfaceContainerLow = Color(0xFF171D1C),
-    surfaceContainer = Color(0xFF1B2120),
-    surfaceContainerHigh = Color(0xFF252B2A),
-    surfaceContainerHighest = Color(0xFF303635)
+    outlineVariant = BordeSuaveOscuro,
+    surfaceContainerLowest = Color(0xFF081110),
+    surfaceContainerLow = Color(0xFF13201F),
+    surfaceContainer = Color(0xFF172625),
+    surfaceContainerHigh = Color(0xFF1D2D2B),
+    surfaceContainerHighest = Color(0xFF243533)
 )
 
 @Composable

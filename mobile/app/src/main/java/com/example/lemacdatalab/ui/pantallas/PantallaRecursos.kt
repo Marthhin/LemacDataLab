@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ExpandMore
-import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -35,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.Contenido
@@ -87,52 +85,11 @@ fun PantallaRecursos(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.weight(1f)
         ) {
-            item(key = "aviso") {
-                AvisoRecursos()
-            }
-
             items(items = contenidos, key = { it.id }) { contenido ->
                 TarjetaContenido(
                     contenido = contenido,
                     expandido = idExpandido == contenido.id,
                     alPresionar = { alAlternar(contenido.id) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun AvisoRecursos() {
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-        ),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.Info,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp)
-            )
-            Column(
-                modifier = Modifier.padding(start = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = "Estos contenidos son educativos y no reemplazan la atención profesional ni un servicio de urgencia.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = "Si necesitas ayuda urgente en Chile: SAMU 131 · Línea de prevención del suicidio *4141.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
