@@ -14,16 +14,13 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.material.icons.rounded.FilterAltOff
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.RegistroActividad
+import com.example.lemacdatalab.ui.componentes.FiltrosAmbito
 import com.example.lemacdatalab.ui.componentes.TarjetaRegistro
 import com.example.lemacdatalab.util.mesDeFecha
 
@@ -147,33 +145,6 @@ fun PantallaHistorial(
                 registros = registros,
                 alVerDetalle = alVerDetalle,
                 modifier = Modifier.weight(1f)
-            )
-        }
-    }
-}
-
-@Composable
-private fun FiltrosAmbito(
-    filtro: Ambito?,
-    alCambiarFiltro: (Ambito?) -> Unit
-) {
-    val opciones = listOf<Ambito?>(null) + Ambito.entries
-
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items(opciones) { opcion ->
-            val seleccionado = filtro == opcion
-            FilterChip(
-                selected = seleccionado,
-                onClick = { alCambiarFiltro(opcion) },
-                label = { Text(opcion?.nombre ?: "Todos") },
-                leadingIcon = if (seleccionado) {
-                    { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                } else {
-                    null
-                }
             )
         }
     }

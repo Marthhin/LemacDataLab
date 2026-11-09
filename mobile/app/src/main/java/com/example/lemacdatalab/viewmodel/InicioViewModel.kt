@@ -46,9 +46,8 @@ class InicioViewModel(
         ),
         OpcionInicio(
             nombre = "Recursos de apoyo",
-            descripcion = "Próximamente",
-            icono = Icons.Rounded.Spa,
-            habilitada = false
+            descripcion = "Ejercicios y lecturas breves",
+            icono = Icons.Rounded.Spa
         ),
         OpcionInicio(
             nombre = "Recordatorios",

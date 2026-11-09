@@ -47,6 +47,7 @@ fun PantallaInicio(
     alRegistrar: () -> Unit,
     alVerHistorial: () -> Unit,
     alVerRegistro: (Int) -> Unit,
+    alVerRecursos: () -> Unit,
     alVerRecordatorios: () -> Unit,
     alCerrarSesion: () -> Unit
 ) {
@@ -176,6 +177,7 @@ fun PantallaInicio(
                 alPresionar = {
                     when (opcion.nombre) {
                         "Ver historial" -> alVerHistorial()
+                        "Recursos de apoyo" -> alVerRecursos()
                         "Recordatorios" -> alVerRecordatorios()
                     }
                 }

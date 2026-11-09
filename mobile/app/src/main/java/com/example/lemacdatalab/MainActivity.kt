@@ -14,6 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.lemacdatalab.datos.BaseDatosRoom
+import com.example.lemacdatalab.datos.RepositorioContenidos
 import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.datos.RepositorioUsuarios
 import com.example.lemacdatalab.datos.SesionUsuario
@@ -23,6 +24,7 @@ import com.example.lemacdatalab.ui.pantallas.PantallaHistorial
 import com.example.lemacdatalab.ui.pantallas.PantallaInicio
 import com.example.lemacdatalab.ui.pantallas.PantallaLogin
 import com.example.lemacdatalab.ui.pantallas.PantallaRecordatorios
+import com.example.lemacdatalab.ui.pantallas.PantallaRecursos
 import com.example.lemacdatalab.ui.pantallas.PantallaRegistro
 import com.example.lemacdatalab.ui.pantallas.PantallaResultado
 import com.example.lemacdatalab.ui.theme.LemacDataLabTheme
@@ -30,6 +32,7 @@ import com.example.lemacdatalab.viewmodel.DetalleViewModel
 import com.example.lemacdatalab.viewmodel.HistorialViewModel
 import com.example.lemacdatalab.viewmodel.InicioViewModel
 import com.example.lemacdatalab.viewmodel.LoginViewModel
+import com.example.lemacdatalab.viewmodel.RecursosViewModel
 import com.example.lemacdatalab.viewmodel.RegistroViewModel
 
 class MainActivity : ComponentActivity() {
@@ -44,6 +47,10 @@ class MainActivity : ComponentActivity() {
 
     private val repositorioUsuarios by lazy {
         RepositorioUsuarios(baseDatos.usuarioDao())
+    }
+
+    private val repositorioContenidos by lazy {
+        RepositorioContenidos()
     }
 
     private val sesion by lazy {
@@ -67,6 +74,9 @@ class MainActivity : ComponentActivity() {
             initializer {
                 DetalleViewModel(repositorio, sesion)
             }
+            initializer {
+                RecursosViewModel(repositorioContenidos)
+            }
         }
     }
 
@@ -88,6 +98,10 @@ class MainActivity : ComponentActivity() {
 
     private val detalleViewModel by lazy {
         ViewModelProvider(this, fabricaViewModels)[DetalleViewModel::class.java]
+    }
+
+    private val recursosViewModel by lazy {
+        ViewModelProvider(this, fabricaViewModels)[RecursosViewModel::class.java]
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -130,6 +144,9 @@ class MainActivity : ComponentActivity() {
                             },
                             alVerRegistro = { id ->
                                 navController.navigate(Rutas.detalle(id))
+                            },
+                            alVerRecursos = {
+                                navController.navigate(Rutas.RECURSOS)
                             },
                             alVerRecordatorios = {
                                 navController.navigate(Rutas.RECORDATORIOS)
@@ -247,6 +264,19 @@ class MainActivity : ComponentActivity() {
                                     navController.popBackStack()
                                 }
                             },
+                            alVolver = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
+                    composable(Rutas.RECURSOS) {
+                        PantallaRecursos(
+                            contenidos = recursosViewModel.contenidosVisibles,
+                            filtro = recursosViewModel.filtro,
+                            idExpandido = recursosViewModel.idExpandido,
+                            alCambiarFiltro = recursosViewModel::cambiarFiltro,
+                            alAlternar = recursosViewModel::alternar,
                             alVolver = {
                                 navController.popBackStack()
                             }
