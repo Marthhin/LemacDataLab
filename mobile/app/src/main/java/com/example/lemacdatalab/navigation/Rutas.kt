@@ -11,6 +11,7 @@ object Rutas {
     const val RECORDATORIOS = "recordatorios"
     const val RESULTADO = "resultado"
     const val CUENTA = "cuenta"
+    const val CONSENTIMIENTO = "consentimiento"
 
     fun detalle(idRegistro: Int) = "detalle/$idRegistro"
 }

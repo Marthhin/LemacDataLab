@@ -42,6 +42,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,7 +50,10 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.Ambito
+import com.example.lemacdatalab.model.ContactoApoyo
 import com.example.lemacdatalab.model.RegistroActividad
+import com.example.lemacdatalab.model.alertaCriticaDe
+import com.example.lemacdatalab.ui.componentes.AvisoCritico
 import com.example.lemacdatalab.ui.componentes.BarrasEscala
 import com.example.lemacdatalab.ui.componentes.FilaDato
 import com.example.lemacdatalab.ui.componentes.FilasDetallesAmbito
@@ -59,6 +63,7 @@ import com.example.lemacdatalab.ui.componentes.IconoAmbito
 fun PantallaResultado(
     registro: RegistroActividad?,
     editando: Boolean,
+    contactoApoyo: ContactoApoyo?,
     alVolver: () -> Unit,
     alRegistrarOtra: () -> Unit
 ) {
@@ -66,6 +71,17 @@ fun PantallaResultado(
 
     LaunchedEffect(registro?.idRegistro) {
         mostrar = true
+    }
+
+    val alerta = remember(registro) { registro?.let(::alertaCriticaDe) }
+    var avisoCerrado by rememberSaveable(registro?.idRegistro) { mutableStateOf(false) }
+
+    if (alerta != null && !avisoCerrado) {
+        AvisoCritico(
+            alerta = alerta,
+            contacto = contactoApoyo,
+            alCerrar = { avisoCerrado = true }
+        )
     }
 
     Column(

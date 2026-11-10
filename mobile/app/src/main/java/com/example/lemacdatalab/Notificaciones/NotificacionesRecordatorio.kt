@@ -15,8 +15,8 @@ import com.example.lemacdatalab.R
 
 object NotificacionesRecordatorio {
 
-    const val TITULO = "Un momento para ti"
-    const val TEXTO = "¿Registramos cómo va tu día?"
+    const val TITULO = "LemacDataLab"
+    const val TEXTO = "Tienes un recordatorio pendiente"
 
     private const val CANAL = "recordatorios"
     private const val ID_NOTIFICACION = 1

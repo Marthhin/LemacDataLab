@@ -2,6 +2,9 @@ package com.example.lemacdatalab.datos
 
 import android.content.Context
 import com.example.lemacdatalab.model.ConfigRecordatorio
+import com.example.lemacdatalab.model.Consentimiento
+import com.example.lemacdatalab.model.ContactoApoyo
+import com.example.lemacdatalab.model.TextoConsentimiento
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +27,53 @@ class PreferenciasApp(context: Context) {
     private val _bienvenidaVista =
         MutableStateFlow(preferencias.getBoolean(CLAVE_BIENVENIDA_VISTA, false))
     val bienvenidaVista: StateFlow<Boolean> = _bienvenidaVista.asStateFlow()
+
+    private val _revisionUsuario = MutableStateFlow(0)
+    val revisionUsuario: StateFlow<Int> = _revisionUsuario.asStateFlow()
+
+    fun consentimientoDe(idUsuario: Int): Consentimiento? {
+        val version = preferencias.getString("$CLAVE_CONSENTIMIENTO_VERSION$idUsuario", null) ?: return null
+        val fecha = preferencias.getLong("$CLAVE_CONSENTIMIENTO_FECHA$idUsuario", 0L)
+        return Consentimiento(version, fecha).takeIf { version == TextoConsentimiento.VERSION }
+    }
+
+    fun aceptarConsentimiento(idUsuario: Int) {
+        preferencias.edit()
+            .putString("$CLAVE_CONSENTIMIENTO_VERSION$idUsuario", TextoConsentimiento.VERSION)
+            .putLong("$CLAVE_CONSENTIMIENTO_FECHA$idUsuario", System.currentTimeMillis())
+            .apply()
+        _revisionUsuario.value++
+    }
+
+    fun contactoDe(idUsuario: Int): ContactoApoyo? {
+        val nombre = preferencias.getString("$CLAVE_CONTACTO_NOMBRE$idUsuario", null)
+        val telefono = preferencias.getString("$CLAVE_CONTACTO_TELEFONO$idUsuario", null)
+        if (nombre.isNullOrBlank() || telefono.isNullOrBlank()) return null
+        return ContactoApoyo(nombre, telefono)
+    }
+
+    fun guardarContacto(idUsuario: Int, contacto: ContactoApoyo?) {
+        preferencias.edit().apply {
+            if (contacto == null) {
+                remove("$CLAVE_CONTACTO_NOMBRE$idUsuario")
+                remove("$CLAVE_CONTACTO_TELEFONO$idUsuario")
+            } else {
+                putString("$CLAVE_CONTACTO_NOMBRE$idUsuario", contacto.nombre)
+                putString("$CLAVE_CONTACTO_TELEFONO$idUsuario", contacto.telefono)
+            }
+        }.apply()
+        _revisionUsuario.value++
+    }
+
+    fun olvidarUsuario(idUsuario: Int) {
+        preferencias.edit()
+            .remove("$CLAVE_CONSENTIMIENTO_VERSION$idUsuario")
+            .remove("$CLAVE_CONSENTIMIENTO_FECHA$idUsuario")
+            .remove("$CLAVE_CONTACTO_NOMBRE$idUsuario")
+            .remove("$CLAVE_CONTACTO_TELEFONO$idUsuario")
+            .apply()
+        _revisionUsuario.value++
+    }
 
     fun marcarBienvenidaVista() {
         preferencias.edit().putBoolean(CLAVE_BIENVENIDA_VISTA, true).apply()
@@ -84,6 +134,10 @@ class PreferenciasApp(context: Context) {
         const val CLAVE_RECORDATORIO_OMITIR = "recordatorio_omitir"
         const val CLAVE_PERMISO_PREGUNTADO = "permiso_notificaciones_preguntado"
         const val CLAVE_BIENVENIDA_VISTA = "bienvenida_vista"
+        const val CLAVE_CONSENTIMIENTO_VERSION = "consentimiento_version_"
+        const val CLAVE_CONSENTIMIENTO_FECHA = "consentimiento_fecha_"
+        const val CLAVE_CONTACTO_NOMBRE = "contacto_nombre_"
+        const val CLAVE_CONTACTO_TELEFONO = "contacto_telefono_"
         const val HORA_POR_DEFECTO = 20
     }
 }

@@ -14,11 +14,15 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -37,6 +41,7 @@ import com.example.lemacdatalab.datos.SesionUsuario
 import com.example.lemacdatalab.navigation.Rutas
 import com.example.lemacdatalab.notificaciones.ProgramadorRecordatorios
 import com.example.lemacdatalab.ui.pantallas.PantallaBienvenida
+import com.example.lemacdatalab.ui.pantallas.PantallaConsentimiento
 import com.example.lemacdatalab.ui.pantallas.PantallaCuenta
 import com.example.lemacdatalab.ui.pantallas.PantallaDetalle
 import com.example.lemacdatalab.ui.pantallas.PantallaHistorial
@@ -211,6 +216,25 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                val datosSesion by sesion.actual.collectAsState()
+                val revisionUsuario by preferencias.revisionUsuario.collectAsState()
+                val idUsuario = datosSesion?.idUsuario
+                val consentimiento = remember(idUsuario, revisionUsuario) {
+                    idUsuario?.let(preferencias::consentimientoDe)
+                }
+                val contactoApoyo = remember(idUsuario, revisionUsuario) {
+                    idUsuario?.let(preferencias::contactoDe)
+                }
+
+                val irARegistrar: () -> Unit = {
+                    if (consentimiento == null) {
+                        navController.navigate(Rutas.CONSENTIMIENTO)
+                    } else {
+                        registroViewModel.comenzarNuevoRegistro()
+                        navController.navigate(Rutas.REGISTRO)
+                    }
+                }
+
                 val irAlLogin: () -> Unit = {
                     navController.navigate(Rutas.LOGIN) {
                         popUpTo(navController.graph.id) {
@@ -219,232 +243,264 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                NavHost(
-                    navController = navController,
-                    startDestination = destinoInicial,
-                    enterTransition = { entrarAvanzando() },
-                    exitTransition = { salirAvanzando() },
-                    popEnterTransition = { entrarVolviendo() },
-                    popExitTransition = { salirVolviendo() }
+                Surface(
+                    color = MaterialTheme.colorScheme.background,
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    composable(
-                        route = Rutas.BIENVENIDA,
-                        exitTransition = { fundidoSalida() }
+                    NavHost(
+                        navController = navController,
+                        startDestination = destinoInicial,
+                        enterTransition = { entrarAvanzando() },
+                        exitTransition = { salirAvanzando() },
+                        popEnterTransition = { entrarVolviendo() },
+                        popExitTransition = { salirVolviendo() }
                     ) {
-                        PantallaBienvenida(
-                            alTerminar = {
-                                preferencias.marcarBienvenidaVista()
-                                irAlLogin()
-                            }
-                        )
-                    }
-
-                    composable(
-                        route = Rutas.LOGIN,
-                        enterTransition = { fundidoEntrada() },
-                        exitTransition = { fundidoSalida() }
-                    ) {
-                        PantallaLogin(
-                            viewModel = loginViewModel,
-                            alEntrar = {
-                                navController.navigate(Rutas.INICIO) {
-                                    popUpTo(Rutas.LOGIN) {
-                                        inclusive = true
-                                    }
+                        composable(
+                            route = Rutas.BIENVENIDA,
+                            exitTransition = { fundidoSalida() }
+                        ) {
+                            PantallaBienvenida(
+                                alTerminar = {
+                                    preferencias.marcarBienvenidaVista()
+                                    irAlLogin()
                                 }
-                            }
-                        )
-                    }
-
-                    composable(
-                        route = Rutas.INICIO,
-                        enterTransition = {
-                            if (initialState.destination.route == Rutas.LOGIN) {
-                                fundidoEntrada()
-                            } else {
-                                entrarAvanzando()
-                            }
-                        },
-                        exitTransition = {
-                            if (targetState.destination.route == Rutas.LOGIN) {
-                                fundidoSalida()
-                            } else {
-                                salirAvanzando()
-                            }
+                            )
                         }
-                    ) {
-                        val permisoPreguntado by preferencias.permisoPreguntado.collectAsState()
 
-                        PantallaInicio(
-                            viewModel = inicioViewModel,
-                            alias = inicioViewModel.alias,
-                            modoOscuro = usarOscuro,
-                            mostrarAvisoPermiso = !permisoPreguntado,
-                            alMarcarPermisoPreguntado = preferencias::marcarPermisoPreguntado,
-                            alCambiarTema = {
-                                preferencias.cambiarModoOscuro(!usarOscuro)
-                            },
-                            alRegistrar = {
-                                registroViewModel.comenzarNuevoRegistro()
-                                navController.navigate(Rutas.REGISTRO)
-                            },
-                            alVerHistorial = {
-                                navController.navigate(Rutas.HISTORIAL)
-                            },
-                            alVerRegistro = { id ->
-                                navController.navigate(Rutas.detalle(id))
-                            },
-                            alVerRecursos = {
-                                navController.navigate(Rutas.RECURSOS)
-                            },
-                            alVerRecordatorios = {
-                                navController.navigate(Rutas.RECORDATORIOS)
-                            },
-                            alVerCuenta = {
-                                navController.navigate(Rutas.CUENTA)
-                            }
-                        )
-                    }
-
-                    composable(
-                        route = Rutas.REGISTRO,
-                        enterTransition = { subirFormulario() },
-                        popExitTransition = { bajarFormulario() },
-                        exitTransition = { fundidoSalida() }
-                    ) {
-                        PantallaRegistro(
-                            viewModel = registroViewModel,
-                            alGuardar = {
-                                registroViewModel.guardarRegistro {
-                                    navController.navigate(Rutas.RESULTADO) {
-                                        popUpTo(Rutas.REGISTRO) {
+                        composable(
+                            route = Rutas.LOGIN,
+                            enterTransition = { fundidoEntrada() },
+                            exitTransition = { fundidoSalida() }
+                        ) {
+                            PantallaLogin(
+                                viewModel = loginViewModel,
+                                alEntrar = {
+                                    navController.navigate(Rutas.INICIO) {
+                                        popUpTo(Rutas.LOGIN) {
                                             inclusive = true
                                         }
                                     }
                                 }
-                            },
-                            alCerrar = {
-                                navController.popBackStack()
-                            }
-                        )
-                    }
-
-                    composable(
-                        route = Rutas.RESULTADO,
-                        enterTransition = { fundidoEntrada() }
-                    ) {
-                        PantallaResultado(
-                            registro = registroViewModel.registroActual,
-                            editando = registroViewModel.editando,
-                            alVolver = {
-                                navController.navigate(Rutas.INICIO) {
-                                    popUpTo(Rutas.INICIO) {
-                                        inclusive = false
-                                    }
-                                    launchSingleTop = true
-                                }
-                            },
-                            alRegistrarOtra = {
-                                registroViewModel.comenzarNuevoRegistro()
-                                navController.navigate(Rutas.REGISTRO) {
-                                    popUpTo(Rutas.RESULTADO) {
-                                        inclusive = true
-                                    }
-                                }
-                            }
-                        )
-                    }
-
-                    composable(Rutas.HISTORIAL) {
-                        PantallaHistorial(
-                            viewModel = historialViewModel,
-                            alVerDetalle = { id ->
-                                navController.navigate(Rutas.detalle(id))
-                            },
-                            alVolver = {
-                                navController.popBackStack()
-                            }
-                        )
-                    }
-
-                    composable(
-                        route = Rutas.DETALLE,
-                        arguments = listOf(
-                            navArgument("idRegistro") { type = NavType.IntType }
-                        )
-                    ) { entrada ->
-                        val idRegistro = entrada.arguments?.getInt("idRegistro") ?: -1
-
-                        LaunchedEffect(idRegistro) {
-                            detalleViewModel.mostrar(idRegistro)
+                            )
                         }
 
-                        PantallaDetalle(
-                            registro = detalleViewModel.registro,
-                            versiones = detalleViewModel.versiones,
-                            cargando = detalleViewModel.cargando,
-                            eliminando = detalleViewModel.eliminando,
-                            mensajeError = detalleViewModel.mensajeError,
-                            alEditar = { registro ->
-                                registroViewModel.comenzarEditarRegistro(registro)
-                                navController.navigate(Rutas.REGISTRO)
+                        composable(
+                            route = Rutas.INICIO,
+                            enterTransition = {
+                                if (initialState.destination.route == Rutas.LOGIN) {
+                                    fundidoEntrada()
+                                } else {
+                                    entrarAvanzando()
+                                }
                             },
-                            alEliminar = {
-                                detalleViewModel.eliminar {
+                            exitTransition = {
+                                if (targetState.destination.route == Rutas.LOGIN) {
+                                    fundidoSalida()
+                                } else {
+                                    salirAvanzando()
+                                }
+                            }
+                        ) {
+                            val permisoPreguntado by preferencias.permisoPreguntado.collectAsState()
+
+                            PantallaInicio(
+                                viewModel = inicioViewModel,
+                                alias = inicioViewModel.alias,
+                                modoOscuro = usarOscuro,
+                                mostrarAvisoPermiso = !permisoPreguntado,
+                                alMarcarPermisoPreguntado = preferencias::marcarPermisoPreguntado,
+                                alCambiarTema = {
+                                    preferencias.cambiarModoOscuro(!usarOscuro)
+                                },
+                                alRegistrar = irARegistrar,
+                                alVerHistorial = {
+                                    navController.navigate(Rutas.HISTORIAL)
+                                },
+                                alVerRegistro = { id ->
+                                    navController.navigate(Rutas.detalle(id))
+                                },
+                                alVerRecursos = {
+                                    navController.navigate(Rutas.RECURSOS)
+                                },
+                                alVerRecordatorios = {
+                                    navController.navigate(Rutas.RECORDATORIOS)
+                                },
+                                alVerCuenta = {
+                                    navController.navigate(Rutas.CUENTA)
+                                }
+                            )
+                        }
+
+                        composable(
+                            route = Rutas.REGISTRO,
+                            enterTransition = { subirFormulario() },
+                            popExitTransition = { bajarFormulario() },
+                            exitTransition = { fundidoSalida() }
+                        ) {
+                            PantallaRegistro(
+                                viewModel = registroViewModel,
+                                alGuardar = {
+                                    registroViewModel.guardarRegistro {
+                                        navController.navigate(Rutas.RESULTADO) {
+                                            popUpTo(Rutas.REGISTRO) {
+                                                inclusive = true
+                                            }
+                                        }
+                                    }
+                                },
+                                alCerrar = {
                                     navController.popBackStack()
                                 }
-                            },
-                            alVolver = {
-                                navController.popBackStack()
-                            }
-                        )
-                    }
-
-                    composable(Rutas.RECURSOS) {
-                        PantallaRecursos(
-                            contenidos = recursosViewModel.contenidosVisibles,
-                            filtro = recursosViewModel.filtro,
-                            idExpandido = recursosViewModel.idExpandido,
-                            alCambiarFiltro = recursosViewModel::cambiarFiltro,
-                            alAlternar = recursosViewModel::alternar,
-                            alVolver = {
-                                navController.popBackStack()
-                            }
-                        )
-                    }
-
-                    composable(Rutas.RECORDATORIOS) {
-                        val config by recordatoriosViewModel.config.collectAsState()
-
-                        PantallaRecordatorios(
-                            config = config,
-                            alActivar = recordatoriosViewModel::activar,
-                            alDesactivar = recordatoriosViewModel::desactivar,
-                            alCambiarHora = recordatoriosViewModel::cambiarHora,
-                            alAlternarDia = recordatoriosViewModel::alternarDia,
-                            alCambiarOmitir = recordatoriosViewModel::cambiarOmitir,
-                            alVolver = {
-                                navController.popBackStack()
-                            }
-                        )
-                    }
-
-                    composable(Rutas.CUENTA) {
-                        LaunchedEffect(Unit) {
-                            cuentaViewModel.reiniciarFormulario()
+                            )
                         }
 
-                        PantallaCuenta(
-                            viewModel = cuentaViewModel,
-                            alCerrarSesion = {
-                                sesion.cerrar()
-                                irAlLogin()
-                            },
-                            alCuentaEliminada = irAlLogin,
-                            alVolver = {
-                                navController.popBackStack()
+                        composable(
+                            route = Rutas.RESULTADO,
+                            enterTransition = { fundidoEntrada() }
+                        ) {
+                            PantallaResultado(
+                                registro = registroViewModel.registroActual,
+                                editando = registroViewModel.editando,
+                                contactoApoyo = contactoApoyo,
+                                alVolver = {
+                                    navController.navigate(Rutas.INICIO) {
+                                        popUpTo(Rutas.INICIO) {
+                                            inclusive = false
+                                        }
+                                        launchSingleTop = true
+                                    }
+                                },
+                                alRegistrarOtra = {
+                                    registroViewModel.comenzarNuevoRegistro()
+                                    navController.navigate(Rutas.REGISTRO) {
+                                        popUpTo(Rutas.RESULTADO) {
+                                            inclusive = true
+                                        }
+                                    }
+                                }
+                            )
+                        }
+
+                        composable(Rutas.HISTORIAL) {
+                            PantallaHistorial(
+                                viewModel = historialViewModel,
+                                alVerDetalle = { id ->
+                                    navController.navigate(Rutas.detalle(id))
+                                },
+                                alVolver = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
+                        composable(
+                            route = Rutas.DETALLE,
+                            arguments = listOf(
+                                navArgument("idRegistro") { type = NavType.IntType }
+                            )
+                        ) { entrada ->
+                            val idRegistro = entrada.arguments?.getInt("idRegistro") ?: -1
+
+                            LaunchedEffect(idRegistro) {
+                                detalleViewModel.mostrar(idRegistro)
                             }
-                        )
+
+                            PantallaDetalle(
+                                registro = detalleViewModel.registro,
+                                versiones = detalleViewModel.versiones,
+                                cargando = detalleViewModel.cargando,
+                                eliminando = detalleViewModel.eliminando,
+                                mensajeError = detalleViewModel.mensajeError,
+                                alEditar = { registro ->
+                                    registroViewModel.comenzarEditarRegistro(registro)
+                                    navController.navigate(Rutas.REGISTRO)
+                                },
+                                alEliminar = {
+                                    detalleViewModel.eliminar {
+                                        navController.popBackStack()
+                                    }
+                                },
+                                alVolver = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
+                        composable(Rutas.RECURSOS) {
+                            PantallaRecursos(
+                                contenidos = recursosViewModel.contenidosVisibles,
+                                filtro = recursosViewModel.filtro,
+                                idExpandido = recursosViewModel.idExpandido,
+                                alCambiarFiltro = recursosViewModel::cambiarFiltro,
+                                alAlternar = recursosViewModel::alternar,
+                                alVolver = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
+                        composable(Rutas.RECORDATORIOS) {
+                            val config by recordatoriosViewModel.config.collectAsState()
+
+                            PantallaRecordatorios(
+                                config = config,
+                                alActivar = recordatoriosViewModel::activar,
+                                alDesactivar = recordatoriosViewModel::desactivar,
+                                alCambiarHora = recordatoriosViewModel::cambiarHora,
+                                alAlternarDia = recordatoriosViewModel::alternarDia,
+                                alCambiarOmitir = recordatoriosViewModel::cambiarOmitir,
+                                alVolver = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
+                        composable(Rutas.CONSENTIMIENTO) {
+                            PantallaConsentimiento(
+                                aceptado = consentimiento,
+                                alAceptar = {
+                                    idUsuario?.let(preferencias::aceptarConsentimiento)
+                                    registroViewModel.comenzarNuevoRegistro()
+                                    navController.navigate(Rutas.REGISTRO) {
+                                        popUpTo(Rutas.CONSENTIMIENTO) {
+                                            inclusive = true
+                                        }
+                                    }
+                                },
+                                alVolver = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
+                        composable(Rutas.CUENTA) {
+                            LaunchedEffect(Unit) {
+                                cuentaViewModel.reiniciarFormulario()
+                            }
+
+                            PantallaCuenta(
+                                viewModel = cuentaViewModel,
+                                consentimiento = consentimiento,
+                                contactoApoyo = contactoApoyo,
+                                alVerConsentimiento = {
+                                    navController.navigate(Rutas.CONSENTIMIENTO)
+                                },
+                                alGuardarContacto = { contacto ->
+                                    idUsuario?.let { preferencias.guardarContacto(it, contacto) }
+                                },
+                                alCerrarSesion = {
+                                    sesion.cerrar()
+                                    irAlLogin()
+                                },
+                                alCuentaEliminada = {
+                                    idUsuario?.let(preferencias::olvidarUsuario)
+                                    irAlLogin()
+                                },
+                                alVolver = {
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
                     }
                 }
             }
