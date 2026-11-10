@@ -1,6 +1,7 @@
 package com.example.lemacdatalab.ui.pantallas
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,11 +22,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.DeleteForever
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.VerifiedUser
@@ -36,10 +39,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -50,6 +53,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.Consentimiento
@@ -66,7 +70,9 @@ fun PantallaCuenta(
     alGuardarContacto: (ContactoApoyo?) -> Unit,
     alCerrarSesion: () -> Unit,
     alCuentaEliminada: () -> Unit,
-    alVolver: () -> Unit
+    modoOscuro: Boolean,
+    alCambiarTema: (Boolean) -> Unit,
+    alVerRecordatorios: () -> Unit
 ) {
     var confirmarSalida by rememberSaveable { mutableStateOf(false) }
     var confirmarEliminar by rememberSaveable { mutableStateOf(false) }
@@ -132,13 +138,10 @@ fun PantallaCuenta(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 12.dp)
+                .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
-            IconButton(onClick = alVolver) {
-                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Volver al inicio")
-            }
             Text(
-                text = "Mi cuenta",
+                text = "Perfil",
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -184,6 +187,25 @@ fun PantallaCuenta(
                             modifier = Modifier.padding(start = 6.dp)
                         )
                     }
+                }
+            }
+
+            TarjetaCuenta(titulo = "PREFERENCIAS") {
+                FilaAjuste(
+                    icono = Icons.Rounded.NotificationsActive,
+                    titulo = "Recordatorios",
+                    descripcion = "Programa un aviso diario",
+                    alPresionar = alVerRecordatorios
+                ) {
+                    Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null)
+                }
+                FilaAjuste(
+                    icono = Icons.Rounded.DarkMode,
+                    titulo = "Modo oscuro",
+                    descripcion = if (modoOscuro) "Activado" else "Desactivado",
+                    alPresionar = { alCambiarTema(!modoOscuro) }
+                ) {
+                    Switch(checked = modoOscuro, onCheckedChange = alCambiarTema)
                 }
             }
 
@@ -335,6 +357,43 @@ fun PantallaCuenta(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun FilaAjuste(
+    icono: ImageVector,
+    titulo: String,
+    descripcion: String,
+    alPresionar: () -> Unit,
+    accion: @Composable () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = alPresionar)
+            .padding(vertical = 4.dp)
+    ) {
+        Icon(
+            imageVector = icono,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(22.dp)
+        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 14.dp)
+        ) {
+            Text(titulo, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = descripcion,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        accion()
     }
 }
 

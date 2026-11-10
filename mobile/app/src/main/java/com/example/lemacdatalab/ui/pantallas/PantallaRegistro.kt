@@ -6,8 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
@@ -24,7 +21,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -33,16 +29,12 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SelectableDates
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -55,18 +47,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.CamposAmbito
-import com.example.lemacdatalab.model.Escala
-import com.example.lemacdatalab.model.OPCION_OTRO
 import com.example.lemacdatalab.model.etiquetaResultado
 import com.example.lemacdatalab.model.opcionesResultado
 import com.example.lemacdatalab.model.textosDe
+import com.example.lemacdatalab.ui.componentes.SelectorCatalogo
+import com.example.lemacdatalab.ui.componentes.SelectorEscala
+import com.example.lemacdatalab.ui.componentes.SelectorOpciones
 import com.example.lemacdatalab.util.fechaAMillisUtc
 import com.example.lemacdatalab.util.fechaDeHoy
 import com.example.lemacdatalab.util.millisUtcAFecha
@@ -364,66 +354,6 @@ private fun CamposDelAmbito(ambito: Ambito, viewModel: RegistroViewModel) {
     }
 }
 
-@Composable
-private fun SelectorCatalogo(
-    opciones: List<String>,
-    seleccionada: String,
-    otro: String,
-    alElegir: (String) -> Unit,
-    alCambiarOtro: (String) -> Unit,
-    permitirQuitar: Boolean
-) {
-    SelectorOpciones(
-        opciones = opciones,
-        seleccionada = seleccionada,
-        alElegir = alElegir,
-        permitirQuitar = permitirQuitar
-    )
-
-    AnimatedVisibility(visible = seleccionada == OPCION_OTRO) {
-        OutlinedTextField(
-            value = otro,
-            onValueChange = alCambiarOtro,
-            label = { Text("Especifica") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun SelectorOpciones(
-    opciones: List<String>,
-    seleccionada: String,
-    alElegir: (String) -> Unit,
-    permitirQuitar: Boolean
-) {
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
-    ) {
-        opciones.forEach { opcion ->
-            val elegida = opcion == seleccionada
-            FilterChip(
-                selected = elegida,
-                onClick = {
-                    when {
-                        !elegida -> alElegir(opcion)
-                        permitirQuitar -> alElegir("")
-                    }
-                },
-                label = { Text(opcion) },
-                leadingIcon = if (elegida) {
-                    { Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-                } else {
-                    null
-                }
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SelectorFecha(
@@ -466,72 +396,6 @@ private fun SelectorFecha(
                     modifier = Modifier.padding(start = 24.dp, top = 16.dp)
                 )
             }
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SelectorEscala(
-    valor: Int,
-    alCambiar: (Int) -> Unit
-) {
-    Row(verticalAlignment = Alignment.Bottom) {
-        Text(
-            text = valor.toString(),
-            style = MaterialTheme.typography.displaySmall,
-            color = if (valor >= Escala.CRITICO) {
-                MaterialTheme.colorScheme.error
-            } else {
-                MaterialTheme.colorScheme.primary
-            }
-        )
-        Text(
-            text = " / ${Escala.MAXIMO}",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 6.dp)
-        )
-        Text(
-            text = Escala.etiqueta(valor).uppercase(),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.End,
-            modifier = Modifier
-                .weight(1f)
-                .padding(bottom = 10.dp)
-        )
-    }
-
-    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-        (Escala.MINIMO..Escala.MAXIMO).forEach { opcion ->
-            SegmentedButton(
-                selected = opcion == valor,
-                onClick = { alCambiar(opcion) },
-                shape = SegmentedButtonDefaults.itemShape(
-                    index = opcion - Escala.MINIMO,
-                    count = Escala.MAXIMO - Escala.MINIMO + 1
-                ),
-                icon = {},
-                label = { Text(opcion.toString()) },
-                modifier = Modifier.semantics {
-                    contentDescription = Escala.describir(opcion)
-                }
-            )
-        }
-    }
-
-    Row(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = "0 · ${Escala.etiqueta(Escala.MINIMO)}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f)
-        )
-        Text(
-            text = "${Escala.etiqueta(Escala.MAXIMO)} · ${Escala.MAXIMO}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

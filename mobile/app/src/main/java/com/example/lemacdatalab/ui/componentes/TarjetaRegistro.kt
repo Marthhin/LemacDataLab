@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.Ambito
+import com.example.lemacdatalab.model.Escala
 import com.example.lemacdatalab.model.RegistroActividad
 
 @Composable
@@ -66,6 +67,16 @@ fun TarjetaRegistro(
                 )
             }
 
+            Text(
+                text = resumenValor(registro, ambito),
+                style = MaterialTheme.typography.labelLarge,
+                color = if (registro.intensidad >= Escala.CRITICO) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.primary
+                }
+            )
+
             Icon(
                 imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                 contentDescription = null
@@ -73,6 +84,13 @@ fun TarjetaRegistro(
         }
     }
 }
+
+private fun resumenValor(registro: RegistroActividad, ambito: Ambito?): String =
+    if (ambito == Ambito.ANIMO) {
+        "↓${registro.intensidad} ↑${registro.elevacion ?: 0}"
+    } else {
+        "${registro.intensidad} · ${Escala.etiqueta(registro.intensidad)}"
+    }
 
 @Composable
 fun TarjetaSinRegistros(alPresionar: () -> Unit) {

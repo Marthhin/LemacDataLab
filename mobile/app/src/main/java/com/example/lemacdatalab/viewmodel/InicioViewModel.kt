@@ -3,9 +3,7 @@ package com.example.lemacdatalab.viewmodel
 import android.util.Log
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AddCircle
-import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.NotificationsActive
-import androidx.compose.material.icons.rounded.Spa
+import androidx.compose.material.icons.rounded.TaskAlt
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -13,16 +11,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.datos.SesionUsuario
+import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.DestinoInicio
+import com.example.lemacdatalab.model.EvolucionAmbito
 import com.example.lemacdatalab.model.OpcionInicio
-import com.example.lemacdatalab.model.PuntoGrafico
 import com.example.lemacdatalab.model.RegistroActividad
+import com.example.lemacdatalab.model.calcularEvolucion
 import com.example.lemacdatalab.util.calcularRacha
-import com.example.lemacdatalab.util.claveFecha
 import com.example.lemacdatalab.util.fechaDeHoy
 import com.example.lemacdatalab.util.ultimosSieteDias
-import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_MAXIMA
-import com.example.lemacdatalab.viewmodel.RegistroViewModel.Companion.INTENSIDAD_MINIMA
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flatMapLatest
@@ -36,45 +33,39 @@ class InicioViewModel(
     private val sesion: SesionUsuario
 ) : ViewModel() {
 
-    val principal = OpcionInicio(
-        destino = DestinoInicio.REGISTRAR,
-        nombre = "Registrar actividad",
-        descripcion = "¿Qué hiciste hoy por ti?",
-        icono = Icons.Rounded.AddCircle
-    )
-
-    val secundarias = listOf(
-        OpcionInicio(
-            destino = DestinoInicio.HISTORIAL,
-            nombre = "Ver historial",
-            descripcion = "Revisa tus registros anteriores",
-            icono = Icons.Rounded.History
-        ),
-        OpcionInicio(
-            destino = DestinoInicio.RECURSOS,
-            nombre = "Recursos de apoyo",
-            descripcion = "Ejercicios y lecturas breves",
-            icono = Icons.Rounded.Spa
-        ),
-        OpcionInicio(
-            destino = DestinoInicio.RECORDATORIOS,
-            nombre = "Recordatorios",
-            descripcion = "Programa un aviso diario",
-            icono = Icons.Rounded.NotificationsActive
-        )
-    )
-
     var alias by mutableStateOf("")
         private set
 
     var totalRegistros by mutableStateOf(0)
         private set
 
-    var ultimoRegistro by mutableStateOf<RegistroActividad?>(null)
+    var periodo by mutableStateOf(PERIODO_SEMANA)
         private set
 
-    var puntosGrafico by mutableStateOf<List<PuntoGrafico>>(emptyList())
+    var evolucion by mutableStateOf<List<EvolucionAmbito>>(emptyList())
         private set
+
+    var registros by mutableStateOf<List<RegistroActividad>>(emptyList())
+        private set
+
+    var ambitosHoy by mutableStateOf(0)
+        private set
+
+    val principal: OpcionInicio
+        get() = OpcionInicio(
+            destino = DestinoInicio.REGISTRO_HOY,
+            nombre = "Registro de hoy",
+            descripcion = when (ambitosHoy) {
+                0 -> "Recorre los cuatro ámbitos en pocos minutos"
+                Ambito.entries.size -> "Completo ✓ · Toca para corregir"
+                else -> "$ambitosHoy de ${Ambito.entries.size} ámbitos registrados hoy"
+            },
+            icono = if (ambitosHoy == Ambito.entries.size) Icons.Rounded.TaskAlt else Icons.Rounded.AddCircle
+        )
+
+    fun evolucionDe(ambito: Ambito): EvolucionAmbito? = evolucion.find { it.ambito == ambito }
+
+    fun registrosDe(ambito: Ambito): List<RegistroActividad> = registros.filter { it.idAmbito == ambito.id }
 
     var racha by mutableStateOf(0)
         private set
@@ -124,35 +115,27 @@ class InicioViewModel(
                 }
                 .collect { lista ->
                     totalRegistros = lista.size
-                    ultimoRegistro = lista.maxByOrNull { it.idRegistro }
-                    puntosGrafico = calcularPuntos(lista)
+                    registros = lista
+                    evolucion = calcularEvolucion(lista, periodo)
                     val fechas = lista.map { it.fechaHora }.toSet()
                     racha = calcularRacha(fechas)
                     semana = ultimosSieteDias(fechas)
                     registroHoy = fechaDeHoy() in fechas
+                    ambitosHoy = lista.filter { it.fechaHora == fechaDeHoy() }.map { it.idAmbito }.distinct().size
                     cargando = false
                     mensajeError = ""
                 }
         }
     }
 
-    private fun calcularPuntos(lista: List<RegistroActividad>): List<PuntoGrafico> {
-        return lista
-            .groupBy { it.fechaHora }
-            .mapNotNull { (fecha, delDia) ->
-                val clave = claveFecha(fecha) ?: return@mapNotNull null
-                val promedio = delDia
-                    .map { it.intensidad.coerceIn(INTENSIDAD_MINIMA, INTENSIDAD_MAXIMA) }
-                    .average()
-                    .toFloat()
-                clave to PuntoGrafico(fecha, promedio)
-            }
-            .sortedBy { (clave, _) -> clave }
-            .takeLast(MAXIMO_PUNTOS)
-            .map { (_, punto) -> punto }
+    fun cambiarPeriodo(dias: Int) {
+        if (dias == periodo) return
+        periodo = dias
+        evolucion = calcularEvolucion(registros, dias)
     }
 
-    private companion object {
-        const val MAXIMO_PUNTOS = 10
+    companion object {
+        const val PERIODO_SEMANA = 7
+        const val PERIODO_MES = 30
     }
 }

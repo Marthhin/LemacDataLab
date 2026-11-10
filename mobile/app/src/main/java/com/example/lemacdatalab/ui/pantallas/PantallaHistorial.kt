@@ -1,5 +1,6 @@
 package com.example.lemacdatalab.ui.pantallas
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,8 +24,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ViewList
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
@@ -34,14 +35,11 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -55,8 +53,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
@@ -76,12 +77,13 @@ import com.example.lemacdatalab.viewmodel.VistaHistorial
 fun PantallaHistorial(
     viewModel: HistorialViewModel,
     alVerDetalle: (Int) -> Unit,
-    alVolver: () -> Unit
+    alRegistrar: () -> Unit
 ) {
     val estadoSnackbar = remember { SnackbarHostState() }
     val descartarActual by rememberUpdatedState(viewModel::descartarEliminacion)
     val registros = viewModel.registrosVisibles
     val hayRegistros = viewModel.registros.isNotEmpty()
+    var mostrarBusqueda by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(viewModel.registroEliminado) {
         val eliminado = viewModel.registroEliminado ?: return@LaunchedEffect
@@ -121,16 +123,9 @@ fun PantallaHistorial(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 12.dp),
+                    .padding(start = 20.dp, end = 8.dp, top = 12.dp, bottom = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = alVolver) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = "Volver al inicio"
-                    )
-                }
-
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -145,30 +140,53 @@ fun PantallaHistorial(
                         val cantidad = "${registros.size} " +
                                 if (registros.size == 1) "registro" else "registros"
                         Text(
-                            text = if (registros.isNotEmpty()) {
-                                "$cantidad · Desliza a la izquierda para eliminar"
-                            } else {
-                                cantidad
-                            },
+                            text = if (registros.isNotEmpty()) "$cantidad · desliza para eliminar" else cantidad,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                if (hayRegistros) {
+                    IconButton(
+                        onClick = {
+                            if (mostrarBusqueda) viewModel.cambiarBusqueda("")
+                            mostrarBusqueda = !mostrarBusqueda
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (mostrarBusqueda) Icons.Rounded.SearchOff else Icons.Rounded.Search,
+                            contentDescription = if (mostrarBusqueda) "Cerrar búsqueda" else "Buscar"
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            viewModel.cambiarVista(
+                                if (viewModel.vista == VistaHistorial.LISTA) VistaHistorial.CALENDARIO else VistaHistorial.LISTA
+                            )
+                        }
+                    ) {
+                        Icon(
+                            imageVector = if (viewModel.vista == VistaHistorial.LISTA) {
+                                Icons.Rounded.CalendarMonth
+                            } else {
+                                Icons.AutoMirrored.Rounded.ViewList
+                            },
+                            contentDescription = if (viewModel.vista == VistaHistorial.LISTA) "Ver calendario" else "Ver lista"
                         )
                     }
                 }
             }
 
             if (hayRegistros) {
-                CampoBusqueda(
-                    texto = viewModel.busqueda,
-                    alCambiar = viewModel::cambiarBusqueda
-                )
-                Spacer(modifier = Modifier.height(8.dp))
+                AnimatedVisibility(visible = mostrarBusqueda || viewModel.busqueda.isNotEmpty()) {
+                    CampoBusqueda(
+                        texto = viewModel.busqueda,
+                        alCambiar = viewModel::cambiarBusqueda
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
                 FiltrosAmbito(filtro = viewModel.filtro, alCambiarFiltro = viewModel::cambiarFiltro)
-                Spacer(modifier = Modifier.height(8.dp))
-                SelectorVista(
-                    vista = viewModel.vista,
-                    alCambiar = viewModel::cambiarVista
-                )
             }
 
             when {
@@ -242,47 +260,23 @@ fun PantallaHistorial(
             }
         }
 
+        FloatingActionButton(
+            onClick = alRegistrar,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(16.dp)
+        ) {
+            Icon(Icons.Rounded.Add, contentDescription = "Registrar un ámbito")
+        }
+
         SnackbarHost(
             hostState = estadoSnackbar,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .windowInsetsPadding(WindowInsets.safeDrawing)
-                .padding(16.dp)
+                .padding(start = 16.dp, end = 16.dp, bottom = 88.dp)
         )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SelectorVista(
-    vista: VistaHistorial,
-    alCambiar: (VistaHistorial) -> Unit
-) {
-    SingleChoiceSegmentedButtonRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp)
-    ) {
-        VistaHistorial.entries.forEachIndexed { indice, opcion ->
-            SegmentedButton(
-                selected = vista == opcion,
-                onClick = { alCambiar(opcion) },
-                shape = SegmentedButtonDefaults.itemShape(index = indice, count = VistaHistorial.entries.size),
-                icon = {
-                    Icon(
-                        imageVector = if (opcion == VistaHistorial.LISTA) {
-                            Icons.AutoMirrored.Rounded.ViewList
-                        } else {
-                            Icons.Rounded.CalendarMonth
-                        },
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            ) {
-                Text(if (opcion == VistaHistorial.LISTA) "Lista" else "Calendario")
-            }
-        }
     }
 }
 
@@ -298,7 +292,7 @@ private fun VistaCalendario(
 
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item(key = "calendario") {
@@ -388,7 +382,7 @@ private fun ListaPorMes(
 
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 96.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         grupos.forEach { (mes, lista) ->

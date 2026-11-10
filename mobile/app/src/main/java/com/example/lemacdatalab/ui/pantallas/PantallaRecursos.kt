@@ -20,13 +20,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,8 +44,7 @@ fun PantallaRecursos(
     filtro: Ambito?,
     idExpandido: Int?,
     alCambiarFiltro: (Ambito?) -> Unit,
-    alAlternar: (Int) -> Unit,
-    alVolver: () -> Unit
+    alAlternar: (Int) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -59,11 +56,8 @@ fun PantallaRecursos(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 12.dp)
+                .padding(horizontal = 20.dp, vertical = 12.dp)
         ) {
-            IconButton(onClick = alVolver) {
-                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Volver al inicio")
-            }
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "Recursos de apoyo",

@@ -7,21 +7,29 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
@@ -30,6 +38,7 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.lemacdatalab.datos.BaseDatosRoom
@@ -38,18 +47,23 @@ import com.example.lemacdatalab.datos.RepositorioContenidos
 import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.datos.RepositorioUsuarios
 import com.example.lemacdatalab.datos.SesionUsuario
+import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.navigation.Rutas
 import com.example.lemacdatalab.notificaciones.ProgramadorRecordatorios
+import com.example.lemacdatalab.ui.componentes.BarraNavegacion
+import com.example.lemacdatalab.ui.componentes.RUTAS_PESTANAS
 import com.example.lemacdatalab.ui.pantallas.PantallaBienvenida
 import com.example.lemacdatalab.ui.pantallas.PantallaConsentimiento
 import com.example.lemacdatalab.ui.pantallas.PantallaCuenta
 import com.example.lemacdatalab.ui.pantallas.PantallaDetalle
+import com.example.lemacdatalab.ui.pantallas.PantallaEvolucionAmbito
 import com.example.lemacdatalab.ui.pantallas.PantallaHistorial
 import com.example.lemacdatalab.ui.pantallas.PantallaInicio
 import com.example.lemacdatalab.ui.pantallas.PantallaLogin
 import com.example.lemacdatalab.ui.pantallas.PantallaRecordatorios
 import com.example.lemacdatalab.ui.pantallas.PantallaRecursos
 import com.example.lemacdatalab.ui.pantallas.PantallaRegistro
+import com.example.lemacdatalab.ui.pantallas.PantallaRegistroHoy
 import com.example.lemacdatalab.ui.pantallas.PantallaResultado
 import com.example.lemacdatalab.ui.theme.LemacDataLabTheme
 import com.example.lemacdatalab.viewmodel.CuentaViewModel
@@ -59,6 +73,7 @@ import com.example.lemacdatalab.viewmodel.InicioViewModel
 import com.example.lemacdatalab.viewmodel.LoginViewModel
 import com.example.lemacdatalab.viewmodel.RecordatoriosViewModel
 import com.example.lemacdatalab.viewmodel.RecursosViewModel
+import com.example.lemacdatalab.viewmodel.RegistroHoyViewModel
 import com.example.lemacdatalab.viewmodel.RegistroViewModel
 
 private const val DURACION_TRANSICION = 300
@@ -98,6 +113,9 @@ private fun Transiciones.bajarFormulario(): ExitTransition =
 private fun fundidoEntrada(): EnterTransition = fadeIn(tween(DURACION_TRANSICION))
 
 private fun fundidoSalida(): ExitTransition = fadeOut(tween(DURACION_TRANSICION))
+
+private fun AnimatedContentTransitionScope<NavBackStackEntry>.entrePestanas(): Boolean =
+    initialState.destination.route in RUTAS_PESTANAS && targetState.destination.route in RUTAS_PESTANAS
 
 class MainActivity : ComponentActivity() {
 
@@ -144,6 +162,9 @@ class MainActivity : ComponentActivity() {
                 HistorialViewModel(repositorio, sesion)
             }
             initializer {
+                RegistroHoyViewModel(repositorio, sesion)
+            }
+            initializer {
                 DetalleViewModel(repositorio, sesion)
             }
             initializer {
@@ -168,6 +189,10 @@ class MainActivity : ComponentActivity() {
 
     private val registroViewModel by lazy {
         ViewModelProvider(this, fabricaViewModels)[RegistroViewModel::class.java]
+    }
+
+    private val registroHoyViewModel by lazy {
+        ViewModelProvider(this, fabricaViewModels)[RegistroHoyViewModel::class.java]
     }
 
     private val historialViewModel by lazy {
@@ -226,12 +251,23 @@ class MainActivity : ComponentActivity() {
                     idUsuario?.let(preferencias::contactoDe)
                 }
 
-                val irARegistrar: () -> Unit = {
-                    if (consentimiento == null) {
-                        navController.navigate(Rutas.CONSENTIMIENTO)
+                var destinoTrasConsentimiento by rememberSaveable { mutableStateOf(Rutas.REGISTRO) }
+
+                val abrirFormulario: (String) -> Unit = { destino ->
+                    if (destino == Rutas.REGISTRO_HOY) {
+                        registroHoyViewModel.comenzar()
                     } else {
                         registroViewModel.comenzarNuevoRegistro()
-                        navController.navigate(Rutas.REGISTRO)
+                    }
+                }
+
+                val irAFormulario: (String) -> Unit = { destino ->
+                    if (consentimiento == null) {
+                        destinoTrasConsentimiento = destino
+                        navController.navigate(Rutas.CONSENTIMIENTO)
+                    } else {
+                        abrirFormulario(destino)
+                        navController.navigate(destino)
                     }
                 }
 
@@ -243,17 +279,48 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                Surface(
-                    color = MaterialTheme.colorScheme.background,
-                    modifier = Modifier.fillMaxSize()
-                ) {
+                val entradaActual by navController.currentBackStackEntryAsState()
+                val rutaActual = entradaActual?.destination?.route
+
+                val irAPestana: (String) -> Unit = { ruta ->
+                    navController.navigate(ruta) {
+                        popUpTo(Rutas.INICIO) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+
+                Scaffold(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    contentWindowInsets = WindowInsets(0),
+                    bottomBar = {
+                        AnimatedVisibility(
+                            visible = rutaActual in RUTAS_PESTANAS,
+                            enter = slideInVertically { it },
+                            exit = slideOutVertically { it }
+                        ) {
+                            BarraNavegacion(
+                                rutaActual = rutaActual,
+                                alElegir = { ruta ->
+                                    if (ruta == Rutas.HISTORIAL) historialViewModel.cambiarFiltro(null)
+                                    irAPestana(ruta)
+                                }
+                            )
+                        }
+                    }
+                ) { relleno ->
                     NavHost(
                         navController = navController,
                         startDestination = destinoInicial,
-                        enterTransition = { entrarAvanzando() },
-                        exitTransition = { salirAvanzando() },
-                        popEnterTransition = { entrarVolviendo() },
-                        popExitTransition = { salirVolviendo() }
+                        modifier = Modifier
+                            .padding(relleno)
+                            .consumeWindowInsets(relleno),
+                        enterTransition = { if (entrePestanas()) fundidoEntrada() else entrarAvanzando() },
+                        exitTransition = { if (entrePestanas()) fundidoSalida() else salirAvanzando() },
+                        popEnterTransition = { if (entrePestanas()) fundidoEntrada() else entrarVolviendo() },
+                        popExitTransition = { if (entrePestanas()) fundidoSalida() else salirVolviendo() }
                     ) {
                         composable(
                             route = Rutas.BIENVENIDA,
@@ -287,14 +354,14 @@ class MainActivity : ComponentActivity() {
                         composable(
                             route = Rutas.INICIO,
                             enterTransition = {
-                                if (initialState.destination.route == Rutas.LOGIN) {
+                                if (initialState.destination.route == Rutas.LOGIN || entrePestanas()) {
                                     fundidoEntrada()
                                 } else {
                                     entrarAvanzando()
                                 }
                             },
                             exitTransition = {
-                                if (targetState.destination.route == Rutas.LOGIN) {
+                                if (targetState.destination.route == Rutas.LOGIN || entrePestanas()) {
                                     fundidoSalida()
                                 } else {
                                     salirAvanzando()
@@ -306,28 +373,13 @@ class MainActivity : ComponentActivity() {
                             PantallaInicio(
                                 viewModel = inicioViewModel,
                                 alias = inicioViewModel.alias,
-                                modoOscuro = usarOscuro,
                                 mostrarAvisoPermiso = !permisoPreguntado,
                                 alMarcarPermisoPreguntado = preferencias::marcarPermisoPreguntado,
-                                alCambiarTema = {
-                                    preferencias.cambiarModoOscuro(!usarOscuro)
+                                alRegistroHoy = { irAFormulario(Rutas.REGISTRO_HOY) },
+                                alVerAmbito = { ambito ->
+                                    navController.navigate(Rutas.evolucion(ambito.id))
                                 },
-                                alRegistrar = irARegistrar,
-                                alVerHistorial = {
-                                    navController.navigate(Rutas.HISTORIAL)
-                                },
-                                alVerRegistro = { id ->
-                                    navController.navigate(Rutas.detalle(id))
-                                },
-                                alVerRecursos = {
-                                    navController.navigate(Rutas.RECURSOS)
-                                },
-                                alVerRecordatorios = {
-                                    navController.navigate(Rutas.RECORDATORIOS)
-                                },
-                                alVerCuenta = {
-                                    navController.navigate(Rutas.CUENTA)
-                                }
+                                alVerPerfil = { irAPestana(Rutas.CUENTA) }
                             )
                         }
 
@@ -387,9 +439,7 @@ class MainActivity : ComponentActivity() {
                                 alVerDetalle = { id ->
                                     navController.navigate(Rutas.detalle(id))
                                 },
-                                alVolver = {
-                                    navController.popBackStack()
-                                }
+                                alRegistrar = { irAFormulario(Rutas.REGISTRO) }
                             )
                         }
 
@@ -432,10 +482,7 @@ class MainActivity : ComponentActivity() {
                                 filtro = recursosViewModel.filtro,
                                 idExpandido = recursosViewModel.idExpandido,
                                 alCambiarFiltro = recursosViewModel::cambiarFiltro,
-                                alAlternar = recursosViewModel::alternar,
-                                alVolver = {
-                                    navController.popBackStack()
-                                }
+                                alAlternar = recursosViewModel::alternar
                             )
                         }
 
@@ -455,13 +502,27 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        composable(
+                            route = Rutas.REGISTRO_HOY,
+                            enterTransition = { subirFormulario() },
+                            popExitTransition = { bajarFormulario() }
+                        ) {
+                            PantallaRegistroHoy(
+                                viewModel = registroHoyViewModel,
+                                contactoApoyo = contactoApoyo,
+                                alTerminar = {
+                                    navController.popBackStack(Rutas.INICIO, inclusive = false)
+                                }
+                            )
+                        }
+
                         composable(Rutas.CONSENTIMIENTO) {
                             PantallaConsentimiento(
                                 aceptado = consentimiento,
                                 alAceptar = {
                                     idUsuario?.let(preferencias::aceptarConsentimiento)
-                                    registroViewModel.comenzarNuevoRegistro()
-                                    navController.navigate(Rutas.REGISTRO) {
+                                    abrirFormulario(destinoTrasConsentimiento)
+                                    navController.navigate(destinoTrasConsentimiento) {
                                         popUpTo(Rutas.CONSENTIMIENTO) {
                                             inclusive = true
                                         }
@@ -495,6 +556,36 @@ class MainActivity : ComponentActivity() {
                                 alCuentaEliminada = {
                                     idUsuario?.let(preferencias::olvidarUsuario)
                                     irAlLogin()
+                                },
+                                modoOscuro = usarOscuro,
+                                alCambiarTema = preferencias::cambiarModoOscuro,
+                                alVerRecordatorios = {
+                                    navController.navigate(Rutas.RECORDATORIOS)
+                                }
+                            )
+                        }
+
+                        composable(
+                            route = Rutas.EVOLUCION,
+                            arguments = listOf(
+                                navArgument("idAmbito") { type = NavType.IntType }
+                            )
+                        ) { entrada ->
+                            val ambito = Ambito.desdeId(entrada.arguments?.getInt("idAmbito") ?: -1)
+                                ?: Ambito.NEURODESARROLLO
+
+                            PantallaEvolucionAmbito(
+                                ambito = ambito,
+                                evolucion = inicioViewModel.evolucionDe(ambito),
+                                registros = inicioViewModel.registrosDe(ambito),
+                                periodo = inicioViewModel.periodo,
+                                alCambiarPeriodo = inicioViewModel::cambiarPeriodo,
+                                alVerRegistro = { id ->
+                                    navController.navigate(Rutas.detalle(id))
+                                },
+                                alVerHistorial = {
+                                    historialViewModel.cambiarFiltro(ambito)
+                                    irAPestana(Rutas.HISTORIAL)
                                 },
                                 alVolver = {
                                     navController.popBackStack()
