@@ -69,5 +69,8 @@ data class RegistroActividad(
     val eliminado: Boolean = false,
 
     @ColumnInfo(name = "fecha_modificacion", defaultValue = "0")
-    val fechaModificacion: Long = 0
+    val fechaModificacion: Long = 0,
+
+    @ColumnInfo(name = "uuid")
+    val uuid: String? = null
 )

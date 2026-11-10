@@ -6,9 +6,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.lemacdatalab.datos.DatasetSintetico
 import com.example.lemacdatalab.datos.RepositorioUsuarios
 import com.example.lemacdatalab.datos.ResultadoAcceso
 import com.example.lemacdatalab.datos.SesionUsuario
+import com.example.lemacdatalab.datos.UsuarioDataset
+import com.example.lemacdatalab.datos.api.ClienteApi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -16,8 +19,23 @@ import kotlinx.coroutines.withContext
 
 class LoginViewModel(
     private val repositorio: RepositorioUsuarios,
-    private val sesion: SesionUsuario
+    private val sesion: SesionUsuario,
+    private val clienteApi: ClienteApi
 ) : ViewModel() {
+
+    val cuentasDemo = DatasetSintetico.USUARIOS
+
+    fun usarCuentaDemo(cuenta: UsuarioDataset) {
+        if (cargando) return
+        creandoCuenta = false
+        alias = cuenta.alias
+        contrasena = cuenta.contrasena
+        confirmacion = ""
+        errorAlias = null
+        errorContrasena = null
+        errorConfirmacion = null
+        mensajeError = ""
+    }
 
     var creandoCuenta by mutableStateOf(false)
         private set
@@ -118,7 +136,8 @@ class LoginViewModel(
 
                 when (resultado) {
                     is ResultadoAcceso.Exito -> {
-                        sesion.iniciar(resultado.usuario.idUsuario, resultado.usuario.alias)
+                        val sesionApi = clienteApi.login(aliasLimpio, contrasena)
+                        sesion.iniciar(resultado.usuario.idUsuario, resultado.usuario.alias, sesionApi?.token)
                         contrasena = ""
                         confirmacion = ""
                         alEntrar()

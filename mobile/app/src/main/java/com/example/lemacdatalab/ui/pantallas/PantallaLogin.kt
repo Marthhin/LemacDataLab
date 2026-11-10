@@ -29,10 +29,15 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
@@ -193,6 +198,41 @@ fun PantallaLogin(
                     "¿No tienes cuenta? Crear una"
                 }
             )
+        }
+
+        if (!viewModel.creandoCuenta) {
+            var verCuentas by rememberSaveable { mutableStateOf(false) }
+
+            TextButton(
+                onClick = { verCuentas = !verCuentas },
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            ) {
+                Text(if (verCuentas) "Ocultar cuentas de demostración" else "Usar una cuenta de demostración")
+            }
+
+            AnimatedVisibility(visible = verCuentas) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    viewModel.cuentasDemo.forEach { cuenta ->
+                        OutlinedCard(
+                            onClick = {
+                                viewModel.usarCuentaDemo(cuenta)
+                                verCuentas = false
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                                Text(cuenta.nombre, style = MaterialTheme.typography.titleSmall)
+                                Text(
+                                    text = cuenta.alias,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         Row(verticalAlignment = Alignment.Top) {

@@ -22,5 +22,11 @@ data class Usuario(
     val contrasenaHash: String,
 
     @ColumnInfo(name = "sal")
-    val sal: String
+    val sal: String,
+
+    @ColumnInfo(name = "nombre")
+    val nombre: String? = null,
+
+    @ColumnInfo(name = "objetivo")
+    val objetivo: String? = null
 )

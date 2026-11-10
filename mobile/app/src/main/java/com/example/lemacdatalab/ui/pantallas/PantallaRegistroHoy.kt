@@ -73,6 +73,7 @@ import com.example.lemacdatalab.viewmodel.RegistroHoyViewModel
 fun PantallaRegistroHoy(
     viewModel: RegistroHoyViewModel,
     contactoApoyo: ContactoApoyo?,
+    objetivo: String?,
     alTerminar: () -> Unit
 ) {
     viewModel.alertaPendiente?.let { alerta ->
@@ -146,6 +147,7 @@ fun PantallaRegistroHoy(
                     ambito = ambito,
                     borrador = viewModel.borradores[paso],
                     yaRegistrado = viewModel.yaRegistrados[paso],
+                    objetivo = objetivo,
                     alCambiar = viewModel::actualizar
                 )
             }
@@ -199,6 +201,7 @@ private fun PasoAmbito(
     ambito: Ambito,
     borrador: BorradorHoy,
     yaRegistrado: Boolean,
+    objetivo: String?,
     alCambiar: ((BorradorHoy) -> BorradorHoy) -> Unit
 ) {
     val textos = textosDe(ambito)
@@ -315,7 +318,10 @@ private fun PasoAmbito(
 
         val opciones = opcionesResultado(ambito)
         if (opciones.isNotEmpty()) {
-            SeccionPaso(titulo = "${etiquetaResultado(ambito)} (opcional)") {
+            SeccionPaso(
+                titulo = "${etiquetaResultado(ambito)} (opcional)",
+                ayuda = objetivo?.takeIf { ambito == Ambito.ADICCIONES }?.let { "Tu objetivo: $it" }
+            ) {
                 SelectorOpciones(
                     opciones = opciones,
                     seleccionada = borrador.resultado,

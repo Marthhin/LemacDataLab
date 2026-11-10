@@ -3,6 +3,7 @@ package com.example.lemacdatalab.datos
 import com.example.lemacdatalab.model.RegistroActividad
 import com.example.lemacdatalab.model.VersionRegistro
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 class RepositorioRegistros(
     private val registroDao: RegistroDao
@@ -33,7 +34,12 @@ class RepositorioRegistros(
     }
 
     suspend fun insertar(registro: RegistroActividad): Long {
-        return registroDao.insertar(registro.copy(fechaModificacion = System.currentTimeMillis()))
+        return registroDao.insertar(
+            registro.copy(
+                fechaModificacion = System.currentTimeMillis(),
+                uuid = registro.uuid ?: UUID.randomUUID().toString()
+            )
+        )
     }
 
     suspend fun actualizar(nuevo: RegistroActividad, anterior: RegistroActividad): Int {

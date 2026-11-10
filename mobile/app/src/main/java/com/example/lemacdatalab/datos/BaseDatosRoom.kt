@@ -6,13 +6,14 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import com.example.lemacdatalab.model.RegistroActividad
 import com.example.lemacdatalab.model.Usuario
 import com.example.lemacdatalab.model.VersionRegistro
 
 @Database(
     entities = [RegistroActividad::class, Usuario::class, VersionRegistro::class],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class BaseDatosRoom : RoomDatabase() {
@@ -22,6 +23,19 @@ abstract class BaseDatosRoom : RoomDatabase() {
     abstract fun usuarioDao(): UsuarioDao
 
     companion object {
+
+        private const val NOMBRE_ARCHIVO = "lemac_registros.db"
+
+        private fun crear(context: Context): BaseDatosRoom {
+            CifradoBaseDatos.cargarBiblioteca()
+            val frase = CifradoBaseDatos.obtenerFrase(context)
+            CifradoBaseDatos.cifrarSiEsTextoPlano(context, NOMBRE_ARCHIVO, frase)
+
+            return Room.databaseBuilder(context, BaseDatosRoom::class.java, NOMBRE_ARCHIVO)
+                .openHelperFactory(SupportOpenHelperFactory(frase.toByteArray(Charsets.UTF_8)))
+                .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5, MIGRACION_5_6)
+                .build()
+        }
 
         @Volatile
         private var instancia: BaseDatosRoom? = null
@@ -143,16 +157,18 @@ abstract class BaseDatosRoom : RoomDatabase() {
             }
         }
 
+        private val MIGRACION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE usuarios ADD COLUMN nombre TEXT")
+                db.execSQL("ALTER TABLE usuarios ADD COLUMN objetivo TEXT")
+                db.execSQL("ALTER TABLE registros ADD COLUMN uuid TEXT")
+                db.execSQL("UPDATE registros SET uuid = lower(hex(randomblob(16))) WHERE uuid IS NULL")
+            }
+        }
+
         fun obtenerInstancia(context: Context): BaseDatosRoom {
             return instancia ?: synchronized(this) {
-                instancia ?: Room.databaseBuilder(
-                    context.applicationContext,
-                    BaseDatosRoom::class.java,
-                    "lemac_registros.db"
-                )
-                    .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5)
-                    .build()
-                    .also { instancia = it }
+                instancia ?: crear(context.applicationContext).also { instancia = it }
             }
         }
     }

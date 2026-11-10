@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.example.lemacdatalab.model.Usuario
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface UsuarioDao {
@@ -19,6 +20,9 @@ interface UsuarioDao {
 
     @Query("SELECT * FROM usuarios WHERE id_usuario = :id")
     suspend fun buscarPorId(id: Int): Usuario?
+
+    @Query("SELECT * FROM usuarios WHERE id_usuario = :id")
+    fun observarPorId(id: Int): Flow<Usuario?>
 
     @Update
     suspend fun actualizar(usuario: Usuario): Int

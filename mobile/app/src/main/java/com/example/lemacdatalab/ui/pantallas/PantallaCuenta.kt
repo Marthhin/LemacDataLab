@@ -31,6 +31,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.PhoneAndroid
+import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.VerifiedUser
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -56,6 +57,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.lemacdatalab.datos.api.EstadoSincronizacion
 import com.example.lemacdatalab.model.Consentimiento
 import com.example.lemacdatalab.model.ContactoApoyo
 import com.example.lemacdatalab.ui.componentes.CampoContrasena
@@ -72,7 +74,10 @@ fun PantallaCuenta(
     alCuentaEliminada: () -> Unit,
     modoOscuro: Boolean,
     alCambiarTema: (Boolean) -> Unit,
-    alVerRecordatorios: () -> Unit
+    alVerRecordatorios: () -> Unit,
+    objetivo: String?,
+    estadoSincronizacion: EstadoSincronizacion,
+    alSincronizar: () -> Unit
 ) {
     var confirmarSalida by rememberSaveable { mutableStateOf(false) }
     var confirmarEliminar by rememberSaveable { mutableStateOf(false) }
@@ -187,6 +192,47 @@ fun PantallaCuenta(
                             modifier = Modifier.padding(start = 6.dp)
                         )
                     }
+                }
+            }
+
+            if (objetivo != null) {
+                TarjetaCuenta(titulo = "MI OBJETIVO PERSONAL") {
+                    Text(text = objetivo, style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = "Definido por tu profesional tratante. En Adicciones solo marcas si lo cumpliste.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            TarjetaCuenta(titulo = "SINCRONIZACIÓN") {
+                Text(
+                    text = when {
+                        estadoSincronizacion.sincronizando -> "Sincronizando…"
+                        estadoSincronizacion.error != null -> estadoSincronizacion.error
+                        estadoSincronizacion.ultima != null ->
+                            "Última sincronización: ${formatearFechaHora(estadoSincronizacion.ultima)}"
+                        else -> "Aún no se sincroniza"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (estadoSincronizacion.error != null) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                )
+                OutlinedButton(
+                    onClick = alSincronizar,
+                    enabled = !estadoSincronizacion.sincronizando,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 48.dp)
+                ) {
+                    Icon(Icons.Rounded.Sync, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Sincronizar ahora")
                 }
             }
 

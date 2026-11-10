@@ -54,6 +54,20 @@ abstract class RegistroDao {
     )
     abstract suspend fun marcarEliminado(id: Int, eliminado: Boolean, fecha: Long): Int
 
+    @Query(
+        "SELECT * FROM registros WHERE id_usuario = :idUsuario AND fecha_modificacion > :desde ORDER BY fecha_modificacion"
+    )
+    abstract suspend fun cambiosDesde(idUsuario: Int, desde: Long): List<RegistroActividad>
+
+    @Query("SELECT * FROM registros WHERE uuid = :uuid LIMIT 1")
+    abstract suspend fun buscarPorUuid(uuid: String): RegistroActividad?
+
+    @Transaction
+    open suspend fun aplicarVersionRemota(remoto: RegistroActividad, local: RegistroActividad): Int {
+        insertarVersion(VersionRegistro.desde(local, System.currentTimeMillis()))
+        return actualizar(remoto.copy(idRegistro = local.idRegistro, idUsuario = local.idUsuario, editado = true))
+    }
+
     @Insert
     abstract suspend fun insertarVersion(version: VersionRegistro): Long
 
@@ -63,7 +77,14 @@ abstract class RegistroDao {
     @Transaction
     open suspend fun actualizarConVersion(nuevo: RegistroActividad, anterior: RegistroActividad, ahora: Long): Int {
         insertarVersion(VersionRegistro.desde(anterior, ahora))
-        return actualizar(nuevo.copy(editado = true, eliminado = false, fechaModificacion = ahora))
+        return actualizar(
+            nuevo.copy(
+                editado = true,
+                eliminado = false,
+                fechaModificacion = ahora,
+                uuid = nuevo.uuid ?: anterior.uuid
+            )
+        )
     }
 
     @Query(

@@ -65,6 +65,7 @@ import com.example.lemacdatalab.viewmodel.RegistroViewModel
 @Composable
 fun PantallaRegistro(
     viewModel: RegistroViewModel,
+    objetivo: String?,
     alGuardar: () -> Unit,
     alCerrar: () -> Unit
 ) {
@@ -187,7 +188,7 @@ fun PantallaRegistro(
         AnimatedVisibility(visible = ambito != null) {
             if (ambito != null) {
                 SeccionRegistro(titulo = "Detalles de ${ambito.nombre.lowercase()}") {
-                    CamposDelAmbito(ambito = ambito, viewModel = viewModel)
+                    CamposDelAmbito(ambito = ambito, viewModel = viewModel, objetivo = objetivo)
                 }
             }
         }
@@ -240,7 +241,7 @@ fun PantallaRegistro(
 }
 
 @Composable
-private fun CamposDelAmbito(ambito: Ambito, viewModel: RegistroViewModel) {
+private fun CamposDelAmbito(ambito: Ambito, viewModel: RegistroViewModel, objetivo: String?) {
     when (ambito) {
         Ambito.ANIMO -> {
             EtiquetaCampo("Elevación")
@@ -345,6 +346,13 @@ private fun CamposDelAmbito(ambito: Ambito, viewModel: RegistroViewModel) {
     val opciones = opcionesResultado(ambito)
     if (opciones.isNotEmpty()) {
         EtiquetaCampo("${etiquetaResultado(ambito)} (opcional)")
+        if (ambito == Ambito.ADICCIONES && objetivo != null) {
+            Text(
+                text = "Tu objetivo: $objetivo",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
         SelectorOpciones(
             opciones = opciones,
             seleccionada = viewModel.resultado,

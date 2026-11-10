@@ -3,6 +3,7 @@ package com.example.lemacdatalab.datos
 import android.database.sqlite.SQLiteConstraintException
 import androidx.room.withTransaction
 import com.example.lemacdatalab.model.Usuario
+import kotlinx.coroutines.flow.Flow
 
 sealed class ResultadoAcceso {
     data class Exito(val usuario: Usuario) : ResultadoAcceso()
@@ -22,6 +23,30 @@ class RepositorioUsuarios(
 
     private val usuarioDao = baseDatos.usuarioDao()
     private val registroDao = baseDatos.registroDao()
+
+    fun observar(idUsuario: Int): Flow<Usuario?> = usuarioDao.observarPorId(idUsuario)
+
+    suspend fun buscarPorId(idUsuario: Int): Usuario? = usuarioDao.buscarPorId(idUsuario)
+
+    suspend fun sembrarDataset() {
+        DatasetSintetico.USUARIOS.forEach { semilla ->
+            val existente = usuarioDao.buscarPorAlias(semilla.alias)
+            if (existente == null) {
+                val sal = Seguridad.generarSal()
+                usuarioDao.insertar(
+                    Usuario(
+                        alias = semilla.alias,
+                        contrasenaHash = Seguridad.calcularHash(semilla.contrasena, sal),
+                        sal = sal,
+                        nombre = semilla.nombre,
+                        objetivo = semilla.objetivo
+                    )
+                )
+            } else if (existente.objetivo == null) {
+                usuarioDao.actualizar(existente.copy(nombre = semilla.nombre, objetivo = semilla.objetivo))
+            }
+        }
+    }
 
     suspend fun crearCuenta(alias: String, contrasena: String): ResultadoAcceso {
         if (usuarioDao.buscarPorAlias(alias) != null) {

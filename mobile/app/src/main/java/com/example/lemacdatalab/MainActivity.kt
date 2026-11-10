@@ -1,7 +1,11 @@
 package com.example.lemacdatalab
 
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
+import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -28,10 +32,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavBackStackEntry
@@ -47,7 +55,11 @@ import com.example.lemacdatalab.datos.RepositorioContenidos
 import com.example.lemacdatalab.datos.RepositorioRegistros
 import com.example.lemacdatalab.datos.RepositorioUsuarios
 import com.example.lemacdatalab.datos.SesionUsuario
+import com.example.lemacdatalab.datos.api.ClienteApi
+import com.example.lemacdatalab.datos.api.ServidorSimulado
+import com.example.lemacdatalab.datos.api.Sincronizador
 import com.example.lemacdatalab.model.Ambito
+import com.example.lemacdatalab.model.TextoConsentimiento
 import com.example.lemacdatalab.navigation.Rutas
 import com.example.lemacdatalab.notificaciones.ProgramadorRecordatorios
 import com.example.lemacdatalab.ui.componentes.BarraNavegacion
@@ -75,6 +87,10 @@ import com.example.lemacdatalab.viewmodel.RecordatoriosViewModel
 import com.example.lemacdatalab.viewmodel.RecursosViewModel
 import com.example.lemacdatalab.viewmodel.RegistroHoyViewModel
 import com.example.lemacdatalab.viewmodel.RegistroViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 
 private const val DURACION_TRANSICION = 300
 
@@ -114,6 +130,8 @@ private fun fundidoEntrada(): EnterTransition = fadeIn(tween(DURACION_TRANSICION
 
 private fun fundidoSalida(): ExitTransition = fadeOut(tween(DURACION_TRANSICION))
 
+private const val REVISION_INACTIVIDAD_MS = 15_000L
+
 private fun AnimatedContentTransitionScope<NavBackStackEntry>.entrePestanas(): Boolean =
     initialState.destination.route in RUTAS_PESTANAS && targetState.destination.route in RUTAS_PESTANAS
 
@@ -143,6 +161,18 @@ class MainActivity : ComponentActivity() {
         PreferenciasApp(applicationContext)
     }
 
+    private val servidorSimulado by lazy {
+        ServidorSimulado(applicationContext, repositorioUsuarios)
+    }
+
+    private val clienteApi by lazy {
+        ClienteApi(servidorSimulado)
+    }
+
+    private val sincronizador by lazy {
+        Sincronizador(applicationContext, baseDatos.registroDao(), clienteApi, sesion)
+    }
+
     private val programador by lazy {
         ProgramadorRecordatorios(applicationContext)
     }
@@ -150,7 +180,7 @@ class MainActivity : ComponentActivity() {
     private val fabricaViewModels by lazy {
         viewModelFactory {
             initializer {
-                LoginViewModel(repositorioUsuarios, sesion)
+                LoginViewModel(repositorioUsuarios, sesion, clienteApi)
             }
             initializer {
                 InicioViewModel(repositorio, sesion)
@@ -215,11 +245,38 @@ class MainActivity : ComponentActivity() {
         ViewModelProvider(this, fabricaViewModels)[CuentaViewModel::class.java]
     }
 
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        sesion.registrarActividad()
+    }
+
+    override fun onStop() {
+        sesion.guardarActividad()
+        super.onStop()
+    }
+
+    private fun ocultarEnRecientes() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            setRecentsScreenshotEnabled(false)
+        } else {
+            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
         programador.programar(preferencias.recordatorio.value)
+        ocultarEnRecientes()
+
+        lifecycleScope.launch(Dispatchers.Default) {
+            try {
+                repositorioUsuarios.sembrarDataset()
+            } catch (error: Exception) {
+                Log.e("MainActivity", "No se pudo cargar el dataset sintético", error)
+            }
+        }
 
         setContent {
             val modoOscuroGuardado by preferencias.modoOscuro.collectAsState()
@@ -275,6 +332,41 @@ class MainActivity : ComponentActivity() {
                     navController.navigate(Rutas.LOGIN) {
                         popUpTo(navController.graph.id) {
                             inclusive = true
+                        }
+                    }
+                }
+
+                val alcance = rememberCoroutineScope()
+                val estadoSincronizacion by sincronizador.estado.collectAsState()
+                val usuarioActual by remember(idUsuario) {
+                    idUsuario?.let(repositorioUsuarios::observar) ?: flowOf(null)
+                }.collectAsState(initial = null)
+
+                val cerrarPorInactividad: () -> Unit = {
+                    if (sesion.haySesion) {
+                        sesion.cerrar()
+                        Toast.makeText(
+                            this@MainActivity,
+                            "Cerramos tu sesión por inactividad",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        irAlLogin()
+                    }
+                }
+
+                LifecycleEventEffect(Lifecycle.Event.ON_START) {
+                    if (sesion.expirada()) cerrarPorInactividad()
+                }
+
+                LaunchedEffect(idUsuario) {
+                    if (idUsuario == null) return@LaunchedEffect
+                    sincronizador.cargarEstado(idUsuario)
+                    sincronizador.sincronizar()
+                    while (true) {
+                        delay(REVISION_INACTIVIDAD_MS)
+                        if (sesion.expirada()) {
+                            cerrarPorInactividad()
+                            break
                         }
                     }
                 }
@@ -391,6 +483,7 @@ class MainActivity : ComponentActivity() {
                         ) {
                             PantallaRegistro(
                                 viewModel = registroViewModel,
+                                objetivo = usuarioActual?.objetivo,
                                 alGuardar = {
                                     registroViewModel.guardarRegistro {
                                         navController.navigate(Rutas.RESULTADO) {
@@ -510,6 +603,7 @@ class MainActivity : ComponentActivity() {
                             PantallaRegistroHoy(
                                 viewModel = registroHoyViewModel,
                                 contactoApoyo = contactoApoyo,
+                                objetivo = usuarioActual?.objetivo,
                                 alTerminar = {
                                     navController.popBackStack(Rutas.INICIO, inclusive = false)
                                 }
@@ -521,6 +615,16 @@ class MainActivity : ComponentActivity() {
                                 aceptado = consentimiento,
                                 alAceptar = {
                                     idUsuario?.let(preferencias::aceptarConsentimiento)
+                                    val token = sesion.token
+                                    if (token != null) {
+                                        alcance.launch {
+                                            clienteApi.aceptarConsentimiento(
+                                                token,
+                                                TextoConsentimiento.VERSION,
+                                                System.currentTimeMillis()
+                                            )
+                                        }
+                                    }
                                     abrirFormulario(destinoTrasConsentimiento)
                                     navController.navigate(destinoTrasConsentimiento) {
                                         popUpTo(Rutas.CONSENTIMIENTO) {
@@ -561,6 +665,11 @@ class MainActivity : ComponentActivity() {
                                 alCambiarTema = preferencias::cambiarModoOscuro,
                                 alVerRecordatorios = {
                                     navController.navigate(Rutas.RECORDATORIOS)
+                                },
+                                objetivo = usuarioActual?.objetivo,
+                                estadoSincronizacion = estadoSincronizacion,
+                                alSincronizar = {
+                                    alcance.launch { sincronizador.sincronizar() }
                                 }
                             )
                         }
