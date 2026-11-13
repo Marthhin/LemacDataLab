@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -20,9 +21,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,20 +37,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.Contenido
 import com.example.lemacdatalab.ui.componentes.FiltrosAmbito
 import com.example.lemacdatalab.ui.componentes.IconoAmbito
+import com.example.lemacdatalab.viewmodel.EstadoCarga
+import com.example.lemacdatalab.viewmodel.EstadoRecursos
 
 @Composable
 fun PantallaRecursos(
-    contenidos: List<Contenido>,
-    filtro: Ambito?,
-    idExpandido: Int?,
+    estado: EstadoRecursos,
     alCambiarFiltro: (Ambito?) -> Unit,
-    alAlternar: (Int) -> Unit
+    alAlternar: (Int) -> Unit,
+    alReintentar: () -> Unit
 ) {
+    val contenidos = estado.visibles
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -65,29 +74,78 @@ fun PantallaRecursos(
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    text = "${contenidos.size} " + if (contenidos.size == 1) "recurso" else "recursos",
+                    text = when (estado.carga) {
+                        EstadoCarga.Cargando -> "Cargando desde el servidor…"
+                        is EstadoCarga.Error -> "Sin conexión con el servidor"
+                        is EstadoCarga.Datos ->
+                            "${contenidos.size} " + if (contenidos.size == 1) "recurso" else "recursos"
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
 
-        FiltrosAmbito(filtro = filtro, alCambiarFiltro = alCambiarFiltro)
-
-        LazyColumn(
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.weight(1f)
-        ) {
-            items(items = contenidos, key = { it.id }) { contenido ->
-                TarjetaContenido(
-                    contenido = contenido,
-                    expandido = idExpandido == contenido.id,
-                    alPresionar = { alAlternar(contenido.id) }
+        when (val carga = estado.carga) {
+            EstadoCarga.Cargando -> EstadoRecursosCentro {
+                CircularProgressIndicator()
+                Text(
+                    text = "Cargando recursos…",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+
+            is EstadoCarga.Error -> EstadoRecursosCentro {
+                Icon(
+                    imageVector = Icons.Rounded.CloudOff,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(56.dp)
+                )
+                Text(
+                    text = carga.mensaje,
+                    style = MaterialTheme.typography.bodyLarge,
+                    textAlign = TextAlign.Center
+                )
+                Button(onClick = alReintentar, shape = RoundedCornerShape(16.dp)) {
+                    Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text("Reintentar", modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+
+            is EstadoCarga.Datos -> {
+                FiltrosAmbito(filtro = estado.filtro, alCambiarFiltro = alCambiarFiltro)
+
+                LazyColumn(
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    items(items = contenidos, key = { it.id }) { contenido ->
+                        TarjetaContenido(
+                            contenido = contenido,
+                            expandido = estado.idExpandido == contenido.id,
+                            alPresionar = { alAlternar(contenido.id) }
+                        )
+                    }
+                }
             }
         }
     }
+}
+
+@Composable
+private fun ColumnScope.EstadoRecursosCentro(contenido: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxWidth()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        content = contenido
+    )
 }
 
 @Composable

@@ -58,6 +58,7 @@ import com.example.lemacdatalab.datos.SesionUsuario
 import com.example.lemacdatalab.datos.api.ClienteApi
 import com.example.lemacdatalab.datos.api.ServidorSimulado
 import com.example.lemacdatalab.datos.api.Sincronizador
+import com.example.lemacdatalab.datos.remoto.ClienteRetrofit
 import com.example.lemacdatalab.model.Ambito
 import com.example.lemacdatalab.model.TextoConsentimiento
 import com.example.lemacdatalab.navigation.Rutas
@@ -150,7 +151,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private val repositorioContenidos by lazy {
-        RepositorioContenidos()
+        RepositorioContenidos(ClienteRetrofit.recursosApi)
     }
 
     private val sesion by lazy {
@@ -570,12 +571,13 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(Rutas.RECURSOS) {
+                            val estadoRecursos by recursosViewModel.estado.collectAsState()
+
                             PantallaRecursos(
-                                contenidos = recursosViewModel.contenidosVisibles,
-                                filtro = recursosViewModel.filtro,
-                                idExpandido = recursosViewModel.idExpandido,
+                                estado = estadoRecursos,
                                 alCambiarFiltro = recursosViewModel::cambiarFiltro,
-                                alAlternar = recursosViewModel::alternar
+                                alAlternar = recursosViewModel::alternar,
+                                alReintentar = recursosViewModel::cargar
                             )
                         }
 

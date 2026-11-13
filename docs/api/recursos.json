@@ -1,0 +1,113 @@
+[
+  {
+    "id": 1,
+    "idAmbito": 1,
+    "titulo": "Dividir una tarea en pasos",
+    "resumen": "Cuando una tarea se siente demasiado grande, separarla en partes pequeñas ayuda a empezar.",
+    "tipo": "EJERCICIO",
+    "minutos": 5,
+    "pasos": [
+      "Escribe la tarea completa en una sola frase.",
+      "Divídela en 3 a 5 pasos concretos.",
+      "Elige el primer paso y dedícale 10 minutos.",
+      "Marca el paso como hecho antes de pasar al siguiente."
+    ]
+  },
+  {
+    "id": 2,
+    "idAmbito": 1,
+    "titulo": "Bloques de tiempo con pausas",
+    "resumen": "Trabajar en bloques cortos con descansos planificados puede facilitar la concentración.",
+    "tipo": "EJERCICIO",
+    "minutos": 25,
+    "pasos": [
+      "Define un bloque de 20 a 25 minutos para una sola tarea.",
+      "Usa un temporizador y deja el teléfono lejos.",
+      "Al terminar, toma una pausa de 5 minutos.",
+      "Después de 3 o 4 bloques, haz una pausa más larga."
+    ]
+  },
+  {
+    "id": 3,
+    "idAmbito": 2,
+    "titulo": "Habilidad STOP",
+    "resumen": "Una pausa breve para no reaccionar de inmediato ante una emoción intensa.",
+    "tipo": "EJERCICIO",
+    "minutos": 2,
+    "pasos": [
+      "Para: no actúes todavía.",
+      "Toma distancia: respira y da un paso atrás.",
+      "Observa qué está pasando dentro y fuera de ti.",
+      "Procede con atención, eligiendo qué hacer."
+    ]
+  },
+  {
+    "id": 4,
+    "idAmbito": 2,
+    "titulo": "Mente sabia",
+    "resumen": "En DBT, la mente sabia es el equilibrio entre lo que sientes y lo que indican los hechos.",
+    "tipo": "LECTURA",
+    "minutos": 3,
+    "pasos": [
+      "Reconoce qué emoción estás sintiendo.",
+      "Reconoce qué dicen los hechos de la situación.",
+      "Pregúntate qué sabes que es cierto considerando ambas cosas."
+    ]
+  },
+  {
+    "id": 5,
+    "idAmbito": 3,
+    "titulo": "Respiración pausada",
+    "resumen": "Respirar a un ritmo lento y parejo puede ayudar a bajar la activación del cuerpo.",
+    "tipo": "EJERCICIO",
+    "minutos": 3,
+    "pasos": [
+      "Inhala por la nariz contando hasta 4.",
+      "Mantén el aire contando hasta 4.",
+      "Exhala lentamente contando hasta 4.",
+      "Espera contando hasta 4 y repite durante 1 a 3 minutos."
+    ]
+  },
+  {
+    "id": 6,
+    "idAmbito": 3,
+    "titulo": "Técnica 5-4-3-2-1",
+    "resumen": "Un ejercicio para volver al momento presente usando los sentidos.",
+    "tipo": "EJERCICIO",
+    "minutos": 3,
+    "pasos": [
+      "Nombra 5 cosas que puedes ver.",
+      "Nombra 4 cosas que puedes tocar.",
+      "Nombra 3 sonidos que puedes escuchar.",
+      "Nombra 2 olores que puedes percibir.",
+      "Nombra 1 sabor que puedes notar."
+    ]
+  },
+  {
+    "id": 7,
+    "idAmbito": 4,
+    "titulo": "Surfear el impulso",
+    "resumen": "Los impulsos suelen subir, llegar a un punto máximo y bajar, como una ola.",
+    "tipo": "EJERCICIO",
+    "minutos": 5,
+    "pasos": [
+      "Nota el impulso sin actuar sobre él.",
+      "Describe dónde lo sientes en el cuerpo.",
+      "Respira y observa cómo cambia su intensidad.",
+      "Recuerda que suele bajar en algunos minutos."
+    ]
+  },
+  {
+    "id": 8,
+    "idAmbito": 4,
+    "titulo": "Plan ante desencadenantes",
+    "resumen": "Anticipar las situaciones de riesgo permite decidir qué hacer antes de que ocurran.",
+    "tipo": "LECTURA",
+    "minutos": 4,
+    "pasos": [
+      "Anota una situación que suele activar el impulso.",
+      "Escribe una acción protectora que puedas hacer en ese momento.",
+      "Identifica a una persona de confianza a quien contactar."
+    ]
+  }
+]
